@@ -4,4 +4,4 @@ Instruções relevantes:
 
 - Nesse repositório só atualizar o TEMPLATE. A cada nova versão, fazer um clone e executar os processos de migração da atualização. Quando subir a versão atualizada, criar uma tag, caso seja preciso localizar uma versão anterior;
 
-- Nos forks, atualizar para a nova versão, incluindo as modificações dos clientes;
+- Nos forks, atualizar para a nova versão, sincronizando e depois incluindo as modificações dos clientes;
