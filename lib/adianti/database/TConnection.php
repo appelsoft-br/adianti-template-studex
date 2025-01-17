@@ -1,4 +1,5 @@
 <?php
+
 namespace Adianti\Database;
 
 use Adianti\Core\AdiantiCoreTranslator;
@@ -18,13 +19,13 @@ class TConnection
 {
     private static $config_path;
     private static $conn_cache;
-    
+
     /**
      * Class Constructor
      * There'll be no instances of this class
      */
     private function __construct() {}
-    
+
     /**
      * Opens a database connection
      * 
@@ -37,16 +38,15 @@ class TConnection
     public static function open($database)
     {
         $dbinfo = self::getDatabaseInfo($database);
-        
-        if (!$dbinfo)
-        {
+
+        if (!$dbinfo) {
             // if the database doesn't exists, throws an exception
-            throw new Exception(AdiantiCoreTranslator::translate('File not found') . ': ' ."'{$database}.ini'");
+            throw new Exception(AdiantiCoreTranslator::translate('File not found') . ': ' . "'{$database}.ini'");
         }
-        
-        return self::openArray( $dbinfo );
+
+        return self::openArray($dbinfo);
     }
-    
+
     /**
      * Change database configuration Path
      * 
@@ -56,7 +56,7 @@ class TConnection
     {
         self::$config_path = $path;
     }
-    
+
     /**
      * Opens a database connection from array with db info
      * 
@@ -80,46 +80,47 @@ class TConnection
         $zone  = isset($db['zone']) ? $db['zone'] : NULL;
         $opts  = isset($db['opts']) ? ';' . $db['opts'] : '';
         $type  = strtolower($type);
-        
+
         // each database driver has a different instantiation process
-        switch ($type)
-        {
+        switch ($type) {
             case 'pgsql':
                 $port = $port ? $port : '5432';
                 $conn = new PDO("pgsql:dbname={$name};user={$user}; password={$pass};host=$host;port={$port}{$opts}");
-                if(!empty($char))
-                {
+                if (!empty($char)) {
                     $conn->exec("SET CLIENT_ENCODING TO '{$char}';");
                 }
                 break;
             case 'mysql':
                 $port = $port ? $port : '3306';
-                if ($char == 'ISO')
-                {
+                $snLocal = getenv('AMBIENTE') != 'PROD' && getenv('AMBIENTE') != 'HOMOLOG';
+                if ($char == 'ISO') {
                     $options = array();
 
-                    if ($zone)
-                    {
+                    if ($zone) {
                         $options = array(PDO::MYSQL_ATTR_INIT_COMMAND => "SET time_zone = '{$zone}'");
                     }
 
-                    $conn = new PDO("mysql:host={$host};port={$port};dbname={$name}{$opts}", $user, $pass, $options);
-                }
-                elseif ($char == 'utf8mb4')
-                {
+                    if ($snLocal)
+                        $conn = new PDO("mysql:host={$host};port={$port};dbname={$name}{$opts}", $user, $pass, $options);
+                    else
+                        $conn = new PDO("mysql:unix_socket={$host};dbname={$name}{$opts}", $user, $pass, $options);
+                } elseif ($char == 'utf8mb4') {
                     $zone = $zone ? ";SET time_zone = '{$zone}'" : "";
-                    $conn = new PDO("mysql:host={$host};port={$port};dbname={$name}{$opts}", $user, $pass, array(PDO::MYSQL_ATTR_INIT_COMMAND => "SET NAMES utf8mb4{$zone}"));
-                }
-                else
-                {
+                    if ($snLocal)
+                        $conn = new PDO("mysql:host={$host};port={$port};dbname={$name}{$opts}", $user, $pass, array(PDO::MYSQL_ATTR_INIT_COMMAND => "SET NAMES utf8mb4{$zone}"));
+                    else
+                        $conn = new PDO("mysql:unix_socket={$host};dbname={$name}{$opts}", $user, $pass, array(PDO::MYSQL_ATTR_INIT_COMMAND => "SET NAMES utf8mb4{$zone}"));
+                } else {
                     $zone = $zone ? ";SET time_zone = '{$zone}'" : "";
-                    $conn = new PDO("mysql:host={$host};port={$port};dbname={$name}{$opts}", $user, $pass, array(PDO::MYSQL_ATTR_INIT_COMMAND => "SET NAMES utf8{$zone}"));
+                    if ($snLocal)
+                        $conn = new PDO("mysql:host={$host};port={$port};dbname={$name}{$opts}", $user, $pass, array(PDO::MYSQL_ATTR_INIT_COMMAND => "SET NAMES utf8{$zone}"));
+                    else
+                        $conn = new PDO("mysql:unix_socket={$host};dbname={$name}{$opts}", $user, $pass, array(PDO::MYSQL_ATTR_INIT_COMMAND => "SET NAMES utf8{$zone}"));
                 }
                 break;
             case 'sqlite':
                 $conn = new PDO("sqlite:{$name}{$opts}");
-                if (is_null($fkey) OR $fkey == '1')
-                {
+                if (is_null($fkey) or $fkey == '1') {
                     $conn->query('PRAGMA foreign_keys = ON'); // referential integrity must be enabled
                 }
                 break;
@@ -128,120 +129,95 @@ class TConnection
                 $db_string = empty($port) ? "{$host}:{$name}" : "{$host}/{$port}:{$name}";
                 $charset = $char ? ";charset={$char}" : '';
                 $conn = new PDO("firebird:dbname={$db_string}{$charset}{$opts}", $user, $pass);
-                $conn->setAttribute( PDO::ATTR_AUTOCOMMIT, 0);
+                $conn->setAttribute(PDO::ATTR_AUTOCOMMIT, 0);
                 break;
             case 'oracle':
                 $port    = $port ? $port : '1521';
                 $charset = $char ? ";charset={$char}" : '';
                 $tns     = isset($db['tns']) ? $db['tns'] : NULL;
-                
-                if ($tns)
-                {
+
+                if ($tns) {
                     $conn = new PDO("oci:dbname={$tns}{$charset}{$opts}", $user, $pass);
-                }
-                else
-                {
+                } else {
                     $conn = new PDO("oci:dbname={$host}:{$port}/{$name}{$charset}{$opts}", $user, $pass);
                 }
-                
-                if (isset($db['date']))
-                {
+
+                if (isset($db['date'])) {
                     $date = $db['date'];
                     $conn->query("ALTER SESSION SET NLS_DATE_FORMAT = '{$date}'");
                 }
-                if (isset($db['time']))
-                {
+                if (isset($db['time'])) {
                     $time = $db['time'];
                     $conn->query("ALTER SESSION SET NLS_TIMESTAMP_FORMAT = '{$time}'");
                 }
-                if (isset($db['nsep']))
-                {
+                if (isset($db['nsep'])) {
                     $nsep = $db['nsep'];
                     $conn->query("ALTER SESSION SET NLS_NUMERIC_CHARACTERS = '{$nsep}'");
                 }
                 break;
             case 'mssql':
-                if (OS == 'WIN')
-                {
-                    if ($port)
-                    {
+                if (OS == 'WIN') {
+                    if ($port) {
                         $conn = new PDO("sqlsrv:Server={$host},{$port};Database={$name}{$opts}", $user, $pass);
-                    }
-                    else
-                    {
+                    } else {
                         $conn = new PDO("sqlsrv:Server={$host};Database={$name}{$opts}", $user, $pass);
                     }
-                }
-                else
-                {
+                } else {
                     $charset = $char ? ";charset={$char}" : '';
-                    
-                    if ($port)
-                    {
+
+                    if ($port) {
                         $conn = new PDO("dblib:host={$host}:{$port};dbname={$name}{$charset}{$opts}", $user, $pass);
-                    }
-                    else
-                    {
+                    } else {
                         $conn = new PDO("dblib:host={$host};dbname={$name}{$charset}{$opts}", $user, $pass);
                     }
                 }
                 break;
             case 'dblib':
                 $charset = $char ? ";charset={$char}" : '';
-                
-                if ($port)
-                {
+
+                if ($port) {
                     $conn = new PDO("dblib:host={$host}:{$port};dbname={$name}{$charset}{$opts}", $user, $pass);
-                }
-                else
-                {
+                } else {
                     $conn = new PDO("dblib:host={$host};dbname={$name}{$charset}{$opts}", $user, $pass);
                 }
                 break;
             case 'sqlsrv':
-                if ($port)
-                {
+                if ($port) {
                     $conn = new PDO("sqlsrv:Server={$host},{$port};Database={$name}{$opts}", $user, $pass);
-                }
-                else
-                {
+                } else {
                     $conn = new PDO("sqlsrv:Server={$host};Database={$name}{$opts}", $user, $pass);
                 }
-                if (!empty($db['ntyp']))
-                {
+                if (!empty($db['ntyp'])) {
                     $conn->setAttribute(PDO::SQLSRV_ATTR_FETCHES_NUMERIC_TYPE, true);
                 }
                 break;
             case 'odbc':
-                $conn = new PDO("odbc:".substr($opts,1));
+                $conn = new PDO("odbc:" . substr($opts, 1));
                 break;
             default:
                 throw new Exception(AdiantiCoreTranslator::translate('Driver not found') . ': ' . $type);
                 break;
         }
-        
+
         // define wich way will be used to report errors (EXCEPTION)
         $conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-        
-        if ($flow == '1')
-        {
+
+        if ($flow == '1') {
             $conn->setAttribute(PDO::ATTR_CASE, PDO::CASE_LOWER);
         }
 
-        if ($fupp == '1')
-        {
+        if ($fupp == '1') {
             $conn->setAttribute(PDO::ATTR_CASE, PDO::CASE_UPPER);
         }
 
-        if ($fnat == '1')
-        {
+        if ($fnat == '1') {
             $conn->setAttribute(PDO::ATTR_CASE, PDO::CASE_NATURAL);
         }
-        
+
         // return the PDO object
         return $conn;
     }
-    
+
     /**
      * Returns the database information as an array
      * @param $database INI File
@@ -251,32 +227,26 @@ class TConnection
         $path  = empty(self::$config_path) ? 'app/config' : self::$config_path;
         $filei = "{$path}/{$database}.ini";
         $filep = "{$path}/{$database}.php";
-        
-        if (!empty(self::$conn_cache[ $database ]))
-        {
-            return self::$conn_cache[ $database ];
+
+        if (!empty(self::$conn_cache[$database])) {
+            return self::$conn_cache[$database];
         }
-        
+
         // check if the database configuration file exists
-        if (file_exists($filei))
-        {
+        if (file_exists($filei)) {
             // read the INI and retuns an array
             $ini = parse_ini_file($filei);
-            self::$conn_cache[ $database ] = $ini;
+            self::$conn_cache[$database] = $ini;
             return $ini;
-        }
-        else if (file_exists($filep))
-        {
+        } else if (file_exists($filep)) {
             $ini = require $filep;
-            self::$conn_cache[ $database ] = $ini;
+            self::$conn_cache[$database] = $ini;
             return $ini;
-        }
-        else
-        {
+        } else {
             return FALSE;
         }
     }
-    
+
     /**
      * Set database info
      * @param $database Database name
@@ -284,6 +254,6 @@ class TConnection
      */
     public static function setDatabaseInfo($database, $info)
     {
-        self::$conn_cache[ $database ] = $info;
+        self::$conn_cache[$database] = $info;
     }
 }

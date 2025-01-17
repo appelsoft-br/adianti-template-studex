@@ -1,58 +1,67 @@
 <!--[main]-->
-<div id="chart_bar_div_{$uniqid}" class="chart" style="width: {$width}; height: {$height};"> <i class="fa fa-spinner fa-pulse fa-2x fa-fw"></i>Loading </div>
+<div id="chart_bar_div_{$uniqid}" style="width: {$width}; height: {$height};">
+  <i class="fa fa-spinner fa-pulse fa-2x fa-fw"></i>Loading
+</div>
 <script>
-$(function() {
-    if (typeof Adianti.chartsQueue == 'undefined')
-    {
-        Adianti.chartsQueue = new Array;
+  $(function () {
+    if (typeof Adianti.chartsQueue == "undefined") {
+      Adianti.chartsQueue = new Array();
     }
-    function render_charts()
-    {
-        Adianti.chartsLoaded = true;
-        while (Adianti.chartsQueue.length > 0)
-        {
-            next = Adianti.chartsQueue.shift();
-            next();
-        }
+    function render_charts() {
+      Adianti.chartsLoaded = true;
+      while (Adianti.chartsQueue.length > 0) {
+        next = Adianti.chartsQueue.shift();
+        next();
+      }
     }
-    
-    var render_bar_chart = function() {
-        var data = google.visualization.arrayToDataTable( {$data|raw} );
-        var options = {
-          title : '{$title}',
-          vAxis: {title: '{$ytitle}'},
-          hAxis: {title: '{$xtitle}'},
-          seriesType: 'bars'
-        };
-        
-        var chart = new google.visualization.BarChart(document.getElementById('chart_bar_div_{$uniqid}'));
+
+    var render_bar_chart = function () {
+      var data = google.visualization.arrayToDataTable({$data});
+      var options = {
+        title: "{$title}",
+        vAxis: { title: "{$ytitle}" },
+        hAxis: { title: "{$xtitle}" },
+        seriesType: "bars",
+      };
+
+      var element = document.getElementById("chart_bar_div_{$uniqid}")
+
+      if ({$data}.length > 1){
+        element.setAttribute("style","height:400px")
+        var chart = new google.charts.Bar(element);
         chart.draw(data, options);
+      }else {
+        element.setAttribute("style","height:50px")
+        element.innerHTML = '<div class="alert alert-dark">Não foram encontradas informações para os filtros informados!</div>'
+      }
+      
     };
-    
-    
+
     if (Adianti.chartsQueue.length == 0) {
-        Adianti.chartsQueue.push( render_bar_chart );
-        
-        if (typeof google === 'undefined' || typeof google.visualization === 'undefined') {
-            jQuery.ajax({
-                    type: "GET",
-                    url: "https://www.gstatic.com/charts/loader.js",
-                    success: function() {
-                        google.charts.load('current', {'packages':['bar', 'line', 'corechart']});
-                        google.charts.setOnLoadCallback(render_charts);
-                    },
-                    dataType: "script",
-                    cache: true
+      Adianti.chartsQueue.push(render_bar_chart);
+
+      if (
+        typeof google === "undefined" ||
+        typeof google.visualization === "undefined"
+      ) {
+        jQuery.ajax({
+          type: "GET",
+          url: "https://www.gstatic.com/charts/loader.js",
+          success: function () {
+            google.charts.load("current", {
+              packages: ["bar", "line", "corechart"],
             });
-        }
-        else {
-            render_charts();
-        }
+            google.charts.setOnLoadCallback(render_charts);
+          },
+          dataType: "script",
+          cache: true,
+        });
+      } else {
+        render_charts();
+      }
+    } else {
+      Adianti.chartsQueue.push(render_bar_chart);
     }
-    else
-    {
-        Adianti.chartsQueue.push( render_bar_chart );
-    }
-});
+  });
 </script>
 <!--[/main]-->

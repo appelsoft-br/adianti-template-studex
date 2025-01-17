@@ -1,20 +1,17 @@
 <?php
+
+use Adianti\Database\TRecord;
+
 /**
- * SystemGroupProgram
- *
- * @version    7.6
- * @package    model
- * @subpackage admin
- * @author     Pablo Dall'Oglio
- * @copyright  Copyright (c) 2006 Adianti Solutions Ltd. (http://www.adianti.com.br)
- * @license    https://adiantiframework.com.br/license-template
+ * System_group_program Active Record
+ * @author  <your-name-here>
  */
 class SystemGroupProgram extends TRecord
 {
     const TABLENAME = 'system_group_program';
-    const PRIMARYKEY= 'id';
+    const PRIMARYKEY = 'id';
     const IDPOLICY =  'max'; // {max, serial}
-    
+
     /**
      * Constructor method
      */

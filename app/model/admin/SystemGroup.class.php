@@ -1,20 +1,30 @@
 <?php
+
+use Adianti\Database\TCriteria;
+use Adianti\Database\TFilter;
+use Adianti\Database\TRecord;
+use Adianti\Database\TRepository;
+
 /**
- * SystemGroup
- *
- * @version    7.6
- * @package    model
- * @subpackage admin
- * @author     Pablo Dall'Oglio
- * @copyright  Copyright (c) 2006 Adianti Solutions Ltd. (http://www.adianti.com.br)
- * @license    https://adiantiframework.com.br/license-template
+ * System_group Active Record
+ * @author  <your-name-here>
  */
 class SystemGroup extends TRecord
 {
-    const TABLENAME  = 'system_group';
+    const TABLENAME = 'system_group';
     const PRIMARYKEY = 'id';
-    const IDPOLICY   = 'max'; // {max, serial}
-    
+    const IDPOLICY =  'max'; // {max, serial}
+
+    public const MODULO_ACERTO = 21;
+    public const MODULO_FATURAMENTO = 30;
+    public const MODULO_NFE = 21;
+    public const MODULO_ESTOQUE = 22;
+
+    const GRUPO_VENDEDOR = 3;
+
+
+    private $system_programs = array();
+
     /**
      * Constructor method
      */
@@ -22,125 +32,59 @@ class SystemGroup extends TRecord
     {
         parent::__construct($id);
         parent::addAttribute('name');
+        parent::addAttribute('funcionario');
+        parent::addAttribute('cliente');
+        parent::addAttribute('cliente_usuario');
     }
-    
+
     /**
-     * Clone the entire object and related ones
-     */
-    public function cloneGroup()
-    {
-        $programs = $this->getSystemPrograms();
-        $users    = $this->getSystemUsers();
-        
-        unset($this->id);
-        $this->name .= ' (clone)';
-        $this->store();
-        
-        if ($programs)
-        {
-            foreach ($programs as $program)
-            {
-                $this->addSystemProgram( $program );
-            }
-        }
-        
-        if ($users)
-        {
-            foreach ($users as $user)
-            {
-                $this->addSystemUser( $user );
-            }
-        }
-    }
-    
-    /**
-     * Add a SystemProgram to the SystemGroup
-     * @param $object Instance of SystemProgram
+     * Method addSystem_program
+     * Add a System_program to the System_group
+     * @param $object Instance of System_program
      */
     public function addSystemProgram(SystemProgram $systemprogram)
     {
-        if (SystemGroupProgram::where('system_program_id','=',$systemprogram->id)->where('system_group_id','=',$this->id)->count() == 0)
-        {
-            $object = new SystemGroupProgram;
-            $object->system_program_id = $systemprogram->id;
-            $object->system_group_id = $this->id;
-            $object->store();
-        }
+        $object = new SystemGroupProgram;
+        $object->system_program_id = $systemprogram->id;
+        $object->system_group_id = $this->id;
+        $object->store();
     }
-    
+
     /**
-     * Add a SystemUser to the SystemGroup
-     * @param $object Instance of SystemUser
-     */
-    public function addSystemUser(SystemUser $systemuser)
-    {
-        if (SystemUserGroup::where('system_user_id','=',$systemuser->id)->where('system_group_id','=',$this->id)->count() == 0)
-        {
-            $object = new SystemUserGroup;
-            $object->system_user_id  = $systemuser->id;
-            $object->system_group_id = $this->id;
-            $object->store();
-        }
-    }
-    
-    /**
-     * Return the SystemProgram's
-     * @return Collection of SystemProgram
+     * Method getSystem_programs
+     * Return the System_group' System_program's
+     * @return Collection of System_program
      */
     public function getSystemPrograms()
     {
         $system_programs = array();
-        
+
         // load the related System_program objects
         $repository = new TRepository('SystemGroupProgram');
         $criteria = new TCriteria;
         $criteria->add(new TFilter('system_group_id', '=', $this->id));
         $system_group_system_programs = $repository->load($criteria);
-        if ($system_group_system_programs)
-        {
-            foreach ($system_group_system_programs as $system_group_system_program)
-            {
-                $system_programs[] = new SystemProgram( $system_group_system_program->system_program_id );
+        if ($system_group_system_programs) {
+            foreach ($system_group_system_programs as $system_group_system_program) {
+                $system_programs[] = new SystemProgram($system_group_system_program->system_program_id);
             }
         }
-        
+
         return $system_programs;
     }
 
-    /**
-     * Return the SystemUser's
-     * @return Collection of SystemUser
-     */
-    public function getSystemUsers()
-    {
-        $system_users = array();
-        
-        // load the related System_user objects
-        $repository = new TRepository('SystemUserGroup');
-        $criteria = new TCriteria;
-        $criteria->add(new TFilter('system_group_id', '=', $this->id));
-        $system_group_system_users = $repository->load($criteria);
-        if ($system_group_system_users)
-        {
-            foreach ($system_group_system_users as $system_group_system_user)
-            {
-                $system_users[] = new SystemUser( $system_group_system_user->system_user_id );
-            }
-        }
-        
-        return $system_users;
-    }
-    
     /**
      * Reset aggregates
      */
     public function clearParts()
     {
-        // delete the related objects
-        SystemGroupProgram::where('system_group_id', '=', $this->id)->delete();
-        SystemUserGroup::where('system_group_id', '=', $this->id)->delete();
+        // delete the related System_groupSystem_program objects
+        $criteria = new TCriteria;
+        $criteria->add(new TFilter('system_group_id', '=', $this->id));
+        $repository = new TRepository('SystemGroupProgram');
+        $repository->delete($criteria);
     }
-    
+
     /**
      * Delete the object and its aggregates
      * @param $id object ID
@@ -149,10 +93,11 @@ class SystemGroup extends TRecord
     {
         // delete the related System_groupSystem_program objects
         $id = isset($id) ? $id : $this->id;
-        
-        SystemGroupProgram::where('system_group_id', '=', $id)->delete();
-        SystemUserGroup::where('system_group_id', '=', $id)->delete();
-        
+        $repository = new TRepository('SystemGroupProgram');
+        $criteria = new TCriteria;
+        $criteria->add(new TFilter('system_group_id', '=', $id));
+        $repository->delete($criteria);
+
         // delete the object itself
         parent::delete($id);
     }

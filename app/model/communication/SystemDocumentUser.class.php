@@ -1,21 +1,18 @@
 <?php
+
+use Adianti\Database\TRecord;
+
 /**
- * SystemDocumentUser
- *
- * @version    7.6
- * @package    model
- * @subpackage communication
- * @author     Pablo Dall'Oglio
- * @copyright  Copyright (c) 2006 Adianti Solutions Ltd. (http://www.adianti.com.br)
- * @license    https://adiantiframework.com.br/license-template
+ * SystemDocumentUser Active Record
+ * @author  <your-name-here>
  */
 class SystemDocumentUser extends TRecord
 {
     const TABLENAME = 'system_document_user';
-    const PRIMARYKEY= 'id';
+    const PRIMARYKEY = 'id';
     const IDPOLICY =  'max'; // {max, serial}
-    
-    
+
+
     /**
      * Constructor method
      */

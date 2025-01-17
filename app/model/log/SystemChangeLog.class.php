@@ -1,65 +1,78 @@
 <?php
-/**
- * SystemChangeLog
- *
- * @version    7.6
- * @package    model
- * @subpackage log
- * @author     Pablo Dall'Oglio
- * @copyright  Copyright (c) 2006 Adianti Solutions Ltd. (http://www.adianti.com.br)
- * @license    https://adiantiframework.com.br/license-template
- */
+
+use Adianti\Database\TRecord;
+
 class SystemChangeLog extends TRecord
 {
     const TABLENAME    = 'system_change_log';
     const PRIMARYKEY   = 'id';
     const IDPOLICY     = 'max'; // {max, serial}
-    
+
     /**
-     * Constructor method
+     * Register a change log
      */
-    public function __construct($id = NULL, $callObjectLoad = TRUE)
+    public static function register($activeRecord, $lastState, $currentState)
     {
-        parent::__construct($id, $callObjectLoad);
-        parent::addAttribute('logdate');
-        parent::addAttribute('log_year');
-        parent::addAttribute('log_month');
-        parent::addAttribute('log_day');
-        parent::addAttribute('login');
-        parent::addAttribute('tablename');
-        parent::addAttribute('primarykey');
-        parent::addAttribute('pkvalue');
-        parent::addAttribute('operation');
-        parent::addAttribute('columnname');
-        parent::addAttribute('oldvalue');
-        parent::addAttribute('newvalue');
-        parent::addAttribute('access_ip');
-        parent::addAttribute('transaction_id');
-        parent::addAttribute('log_trace');
-        parent::addAttribute('session_id');
-        parent::addAttribute('class_name');
-        parent::addAttribute('php_sapi');
-    }
-    
-    /**
-     * Return formatted log trace
-     */
-    public function get_log_trace_formatted()
-    {
-        $log = $this->log_trace;
+        $table = $activeRecord->getEntity();
+        $pk    = $activeRecord->getPrimaryKey();
+
+        /* comentei log
+        TTransaction::open('log');
         
-        preg_match_all('/#(.*)app\/control(.*)/', $log, $matches);
-        
-        if (count($matches[0]) > 0)
+        foreach ($lastState as $key => $value)
         {
-            foreach ($matches[0] as $match)
+            if (!isset($currentState[$key]))
             {
-                $log = str_replace($match, "<b class='red'>{$match}</b>", $log);
+                // deleted
+                $log = new self;
+                $log->tablename  = $table;
+                $log->logdate    = date('Y-m-d H:i:s');
+                $log->login      = SessaoService::buscarLoginUsuario();
+                $log->primarykey = $pk;
+                $log->pkvalue    = $activeRecord->$pk;
+                $log->operation  = 'deleted';
+                $log->columnname = $key;
+                $log->oldvalue   = $value;
+                $log->newvalue   = '';
+                $log->store();
             }
         }
         
-        $log = str_replace('):', '):<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;', $log);
+        foreach ($currentState as $key => $value)
+        {
+            if (isset($lastState[$key]) AND ($value != $lastState[$key]))
+            {
+                // changed
+                $log = new self;
+                $log->tablename  = $table;
+                $log->logdate    = date('Y-m-d H:i:s');
+                $log->login      = SessaoService::buscarLoginUsuario();
+                $log->primarykey = $pk;
+                $log->pkvalue    = $activeRecord->$pk;
+                $log->operation  = 'changed';
+                $log->columnname = $key;
+                $log->oldvalue   = $lastState[$key];
+                $log->newvalue   = $value;
+                $log->store();
+            }
+            if (!isset($lastState[$key]) AND !empty($value))
+            {
+                // created
+                $log = new self;
+                $log->tablename  = $table;
+                $log->logdate    = date('Y-m-d H:i:s');
+                $log->login      = SessaoService::buscarLoginUsuario();
+                $log->primarykey = $pk;
+                $log->pkvalue    = $activeRecord->$pk;
+                $log->operation  = 'created';
+                $log->columnname = $key;
+                $log->oldvalue   = '';
+                $log->newvalue   = $value;
+                $log->store();
+            }
+        }
         
-        return $log;
+        TTransaction::close();
+        */
     }
 }

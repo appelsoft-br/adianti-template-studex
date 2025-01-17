@@ -1,244 +1,110 @@
 <?php
+
 /**
- * SystemProgramForm
- *
- * @version    7.6
- * @package    control
- * @subpackage admin
- * @author     Pablo Dall'Oglio
- * @copyright  Copyright (c) 2006 Adianti Solutions Ltd. (http://www.adianti.com.br)
- * @license    https://adiantiframework.com.br/license-template
+ * SystemProgramForm Registration
+ * @author  <your name here>
  */
 class SystemProgramForm extends TStandardForm
 {
     protected $form; // form
-    private $group_list;
-    private $methods_list;
-    
+
     /**
      * Class constructor
      * Creates the page and the registration form
      */
-    function __construct($param)
+    function __construct()
     {
         parent::__construct();
-        
-        parent::setTargetContainer('adianti_right_panel');
-        
+
         // creates the form
+
         $this->form = new BootstrapFormBuilder('form_SystemProgram');
         $this->form->setFormTitle(_t('Program'));
-        $this->form->enableClientValidation();
-        
+
         // defines the database
-        parent::setDatabase('permission');
-        
+        parent::setDatabase('sample');
+
         // defines the active record
         parent::setActiveRecord('SystemProgram');
-        
+
         // create the form fields
-        $id                = new TEntry('id');
-        $controller        = new TUniqueSearch('controller');
-        $name              = new TEntry('name');
-        
-        $this->group_list = new TDBCheckList('group_list', 'permission', 'SystemGroup', 'id', 'name');
-        $this->group_list->makeScrollable();
-        $this->group_list->setHeight(210);
-        
-        $id->setEditable(false);
-        $controller->addItems($this->getPrograms( empty($param['id']) ));
+        $id            = new TEntry('id');
+        $name          = new TEntry('name');
+        $controller    = new TMultiSearch('controller');
+        $ajuda         = new THtmlEditor('ajuda');
+
+        $controller->addItems($this->getPrograms());
+        $controller->setMaxSize(1);
         $controller->setMinLength(0);
-        $controller->setChangeAction(new TAction([$this, 'onChangeController']));
-        
+        $id->setEditable(false);
+
         // add the fields
-        $this->form->addFields( [new TLabel('ID')], [$id] );
-        $this->form->addFields( [new TLabel(_t('Controller'))], [$controller] );
-        $this->form->addFields( [new TLabel(_t('Name'))], [$name] );
-        $this->form->addFields( [new TFormSeparator(_t('Permission'))] );
-        
+        $this->form->addFields([new TLabel('ID')], [$id]);
+        $this->form->addFields([new TLabel(_t('Name'))], [$name]);
+        $this->form->addFields([new TLabel(_t('Controller'))], [$controller]);
+        $this->form->addFields([new TLabel('Texto de Ajuda')], [$ajuda]);
+
         $id->setSize('30%');
-        $name->setSize('100%');
-        $controller->setSize('100%');
-        
-        
-        $method_name = new TCombo('method_name[]');
-        $method_name->enableSearch();
-        $method_name->setSize('100%');
-        
-        $granted_role = new TCombo('granted_role[]');
-        $granted_role->enableSearch();
-        $granted_role->addItems( ['Y' => _t('Yes'), 'N' => _t('No') ] );
-        $granted_role->setSize('100%');
-        
-        $granted_role->addItems( SystemRole::getIndexedArrayInTransaction('permission', 'id', 'name') );
-        
-        $this->methods_list = new TFieldList;
-        $this->methods_list->generateAria();
-        $this->methods_list->width = '100%';
-        $this->methods_list->name  = 'methods_list';
-        $this->methods_list->addField( _t('Method'), $method_name, ['width' => '50%'] );
-        $this->methods_list->addField( _t('Roles'),  $granted_role,  ['width' => '50%'] );
-        
-        $this->form->addField($method_name);
-        $this->form->addField($granted_role);
-        
-        $this->methods_list->addHeader();
-        $this->methods_list->addDetail( new stdClass );
-        $this->methods_list->addCloneAction();
-        
-        $subform = new BootstrapFormBuilder;
-        $subform->setFieldSizes('100%');
-        $subform->setProperty('style', 'border:none');
-        
-        $subform->appendPage( _t('Groups') );
-        $subform->addFields( [$this->group_list] );
-        
-        $subform->appendPage( _t('Restricted methods') );
-        $subform->addFields( [$this->methods_list] );
-        
-        $this->form->addContent([$subform]);
-        
-        
+        $name->setSize('70%');
+        $controller->setSize('70%');
+        $ajuda->setSize('70%', 250);
+
         // validations
         $name->addValidation(_t('Name'), new TRequiredValidator);
         $controller->addValidation(('Controller'), new TRequiredValidator);
 
         // add form actions
-        $btn = $this->form->addAction(_t('Save'), new TAction(array($this, 'onSave')), 'far:save');
-        $btn->class = 'btn btn-sm btn-primary';
-        
-        $this->form->addActionLink(_t('Clear'), new TAction(array($this, 'onEdit')), 'fa:eraser red');
-        //$this->form->addActionLink(_t('Back'),new TAction(array('SystemProgramList','onReload')),'far:arrow-alt-circle-left blue');
-        
-        $this->form->addHeaderActionLink(_t('Close'), new TAction([$this, 'onClose']), 'fa:times red');
-        
+        $this->form->addAction(_t('Save'), new TAction(array($this, 'onSave')), 'far:save');
+        $this->form->addAction(_t('New'), new TAction(array($this, 'onEdit')), 'fa:eraser red');
+        $this->form->addAction('Ir para Tela', new TAction(array($this, 'toTela')), 'fa:arrow-right red');
+        $this->form->addAction(_t('Back to the listing'), new TAction(array('SystemProgramList', 'onReload')), 'fa:table blue');
+
         $container = new TVBox;
-        $container->style = 'width: 100%';
-        // $container->add(new TXMLBreadCrumb('menu.xml','SystemProgramList'));
+        $container->style = 'width: 90%';
+        $container->add(new TXMLBreadCrumb('menu.xml', 'SystemProgramList'));
         $container->add($this->form);
-        
+
+
         // add the container to the page
         parent::add($container);
     }
-    
-    /**
-     * Change controller, generate name
-     */
-    public static function onChangeController($param)
+
+
+    public function toTela($param)
     {
-        try
-        {
-            if (!empty($param['controller']) AND empty($param['name']))
-            {
-                $obj = new stdClass;
-                $obj->name = preg_replace('/([a-z])([A-Z])/', '$1 $2', $param['controller']);
-                TForm::sendData('form_SystemProgram', $obj);
+        if ($param['id']) {
+            try {
+                TTransaction::open('sample');
+                $programa = SystemProgram::find($param['id']);
+                TTransaction::close();
+                TApplication::loadPage($programa->controller);
+            } catch (Exception $e) {
+                new TMessage('error', $e->getMessage());
             }
-            
-            self::fillMethods($param['controller']);
-        }
-        catch (Exception $e)
-        {
-            new TMessage('error', $e->getMessage());
         }
     }
-    
-    /**
-     * Fill class methods
-     */
-    public static function fillMethods($controller, $program_id = null)
-    {
-        $exposed_methods  = SystemProgramService::getProgramMethods($controller);
-        $found_db_methods = false;
-        $combo_options    = array_combine(array_values($exposed_methods), array_values($exposed_methods));
-        
-        if (!empty($program_id))
-        {
-            TTransaction::open('permission');
-            
-            $method_roles = SystemProgramMethodRole::where('system_program_id','=',$program_id)->load();
-            
-            $granted_methods = [];
-            $granted_roles   = [];
-            if ($method_roles)
-            {
-                $found_db_methods = true;
-                foreach ($method_roles as $method_role)
-                {
-                    $granted_methods[] = $method_role->method_name;
-                    $granted_roles[]   = $method_role->system_role_id;
-                }
-            }
-            TTransaction::close();
-            
-            $data = new stdClass;
-            $data->method_name  = $granted_methods;
-            $data->granted_role = $granted_roles;
-            
-            TCombo::reload('form_SystemProgram', 'method_name[]', $combo_options, true);
-            
-            TFieldList::clear('methods_list');
-            if (count($granted_methods) > 0)
-            {
-                TFieldList::addRows('methods_list', count($granted_methods)-1, 10);
-                TForm::sendData('form_SystemProgram', $data, false, true, 400); // 400 ms of timeout after recreate rows!
-            }
-        }
-        
-        if (!$found_db_methods)
-        {
-            TFieldList::clear('methods_list');
-            TCombo::reload('form_SystemProgram', 'method_name[]', $combo_options, true);
-        }
-    }
-    
     /**
      * Return all the programs under app/control
      */
-    public function getPrograms( $just_new_programs = false )
+    public function getPrograms()
     {
-        try
-        {
-            TTransaction::open('permission');
-            $registered_programs = SystemProgram::getIndexedArray('id', 'controller');
-            TTransaction::close();
-            
-            $entries = array();
-            $iterator = new AppendIterator();
-            $iterator->append(new RecursiveIteratorIterator(new RecursiveDirectoryIterator('app/control'), RecursiveIteratorIterator::CHILD_FIRST));
-            $iterator->append(new RecursiveIteratorIterator(new RecursiveDirectoryIterator('app/view'),    RecursiveIteratorIterator::CHILD_FIRST));
-            
-            foreach ($iterator as $arquivo)
-            {
-                if (substr($arquivo, -4) == '.php')
-                {
-                    $name = $arquivo->getFileName();
-                    $pieces = explode('.', $name);
-                    $class = (string) $pieces[0];
-                    
-                    if ($just_new_programs)
-                    {
-                        if (!in_array($class, $registered_programs) AND !TApplication::hasDefaultPermissions($class) AND substr($class,0,6) !== 'System')
-                        {
-                            $entries[$class] = $class;
-                        } 
-                    }
-                    else
-                    {
-                        $entries[$class] = $class;
-                    }
-                }
+        $entries = array();
+        foreach (new RecursiveIteratorIterator(
+            new RecursiveDirectoryIterator('app/control'),
+            RecursiveIteratorIterator::CHILD_FIRST
+        ) as $arquivo) {
+            if (substr($arquivo, -4) == '.php') {
+                $name = $arquivo->getFileName();
+                $pieces = explode('.', $name);
+                $class = (string) $pieces[0];
+                $entries[$class] = $class;
             }
-            
-            ksort($entries);
-            return $entries;
         }
-        catch (Exception $e)
-        {
-            new TMessage('error', $e->getMessage());
-        }
+
+        ksort($entries);
+        return $entries;
     }
-    
+
     /**
      * method onEdit()
      * Executed whenever the user clicks at the edit button da datagrid
@@ -246,97 +112,55 @@ class SystemProgramForm extends TStandardForm
      */
     public function onEdit($param)
     {
-        try
-        {
-            if (isset($param['key']))
-            {
-                $key=$param['key'];
-                
+        try {
+            if (isset($param['key'])) {
+                $key = $param['key'];
+
                 TTransaction::open($this->database);
                 $class = $this->activeRecord;
                 $object = new $class($key);
-                
-                $groups = [];
-                
-                if( $groups_db = $object->getSystemGroups() )
-                {
-                    foreach( $groups_db as $group )
-                    {
-                        $groups[] = $group->id;
-                    }
-                }
-                
-                $object->group_list = $groups;
+                $object->controller = array($object->controller => $object->controller);
                 $this->form->setData($object);
-                
-                self::fillMethods($object->controller, $object->id);
-                
                 TTransaction::close();
-                
+
                 return $object;
+            } else {
+                $this->form->clear();
             }
-            else
-            {
-                $this->form->clear(true);
-            }
-        }
-        catch (Exception $e) // in case of exception
+        } catch (Exception $e) // in case of exception
         {
             new TMessage('error', $e->getMessage());
             TTransaction::rollback();
         }
     }
-    
+
     /**
      * method onSave()
      * Executed whenever the user clicks at the save button
      */
     public function onSave()
     {
-        try
-        {
+        try {
             TTransaction::open($this->database);
-            
+
             $data = $this->form->getData();
-            
+
             $object = new SystemProgram;
             $object->id = $data->id;
+            $object->ajuda = $data->ajuda;
             $object->name = $data->name;
-            $object->controller = $data->controller;
-            
+            $object->controller = reset($data->controller);
+
             $this->form->validate();
             $object->store();
             $data->id = $object->id;
             $this->form->setData($data);
-            
-            $object->clearParts();
-            
-            if( !empty($data->group_list) )
-            {
-                foreach( $data->group_list as $group_id )
-                {
-                    $object->addSystemGroup( new SystemGroup($group_id) );
-                }
-            }
-            
-            if ( $this->methods_list->getPostData() )
-            {
-                foreach( $this->methods_list->getPostData() as $method )
-                {
-                    if (!empty($method->method_name) && !empty($method->granted_role))
-                    {
-                        $object->addSystemMethodRole($method->method_name, new SystemRole($method->granted_role));
-                    }
-                }
-            }
-            
             TTransaction::close();
-            $pos_action = new TAction(['SystemProgramList', 'onReload']);
-            new TMessage('info', AdiantiCoreTranslator::translate('Record saved'), $pos_action);
-            
+
+            new TMessage('info', AdiantiCoreTranslator::translate('Record saved'));
+
             return $object;
-        }
-        catch (Exception $e) // in case of exception
+        } catch (Exception $e) // in case of exception
         {
             // get the form data
             $object = $this->form->getData($this->activeRecord);
@@ -344,13 +168,5 @@ class SystemProgramForm extends TStandardForm
             new TMessage('error', $e->getMessage());
             TTransaction::rollback();
         }
-    }
-    
-    /**
-     * on close
-     */
-    public static function onClose($param)
-    {
-        TScript::create("Template.closeRightPanel()");
     }
 }

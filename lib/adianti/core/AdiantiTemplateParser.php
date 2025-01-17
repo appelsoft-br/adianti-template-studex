@@ -1,10 +1,12 @@
 <?php
+
 namespace Adianti\Core;
 
 use Adianti\Core\AdiantiCoreTranslator;
 use Adianti\Control\TPage;
 use Adianti\Registry\TSession;
 use Exception;
+use SessaoService;
 
 /**
  * Template parser
@@ -27,23 +29,20 @@ class AdiantiTemplateParser
         $theme     = $ini['general']['theme'];
         $libraries = file_get_contents("app/templates/{$theme}/libraries.html");
         $class     = isset($_REQUEST['class']) ? $_REQUEST['class'] : '';
-        
-        if ( !(TSession::getValue('login') == 'admin'))
-        {
+
+        if (!(SessaoService::buscarLoginUsuario() == 'admin')) {
             $content = str_replace('<!--[IFADMIN]-->',  '<!--',  $content);
             $content = str_replace('<!--[/IFADMIN]-->', '-->',   $content);
         }
-        
-        if (!isset($ini['permission']['user_register']) OR $ini['permission']['user_register'] !== '1')
-        {
+
+        if (!isset($ini['permission']['user_register']) or $ini['permission']['user_register'] !== '1') {
             $content = str_replace(['<!--[CREATE-ACCOUNT]-->', '<!--[CREATE-ACCOUNT]-->'], ['<!--', '-->'], $content);
         }
-        
-        if (!isset($ini['permission']['reset_password']) OR $ini['permission']['reset_password'] !== '1')
-        {
+
+        if (!isset($ini['permission']['reset_password']) or $ini['permission']['reset_password'] !== '1') {
             $content = str_replace(['<!--[RESET-PASSWORD]-->', '<!--[RESET-PASSWORD]-->'], ['<!--', '-->'], $content);
         }
-        
+
         $use_tabs = $ini['general']['use_tabs'] ?? 0;
         $store_tabs = $ini['general']['store_tabs'] ?? 0;
         $use_mdi_windows = $ini['general']['use_mdi_windows'] ?? 0;
@@ -60,9 +59,9 @@ class AdiantiTemplateParser
         $content   = str_replace('{LIBRARIES}', $libraries, $content);
         $content   = str_replace('{class}',     $class, $content);
         $content   = str_replace('{template}',  $theme, $content);
-        $content   = str_replace('{lang}',      AdiantiCoreTranslator::getLanguage(), $content);
+        $content   = str_replace('{lang}',      (string)AdiantiCoreTranslator::getLanguage(), $content);
         $content   = str_replace('{debug}',     isset($ini['general']['debug']) ? $ini['general']['debug'] : '1', $content);
-        $content   = str_replace('{login}',     (string) TSession::getValue('login'), $content);
+        $content   = str_replace('{login}',     (string) SessaoService::buscarLoginUsuario(), $content);
         $content   = str_replace('{title}',     isset($ini['general']['title']) ? $ini['general']['title'] : '', $content);
         $content   = str_replace('{username}',  (string) TSession::getValue('username'), $content);
         $content   = str_replace('{usermail}',  (string) TSession::getValue('usermail'), $content);
@@ -74,11 +73,11 @@ class AdiantiTemplateParser
         $content   = str_replace('{store_tabs}', $store_tabs, $content);
         $content   = str_replace('{use_mdi_windows}', $use_mdi_windows, $content);
         $content   = str_replace('{application}', $ini['general']['application'], $content);
-        
+
         $css       = TPage::getLoadedCSS();
         $js        = TPage::getLoadedJS();
-        $content   = str_replace('{HEAD}', $css.$js, $content);
-        
+        $content   = str_replace('{HEAD}', $css . $js, $content);
+
         return $content;
     }
 }

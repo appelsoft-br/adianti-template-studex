@@ -1,21 +1,16 @@
 <?php
+
 /**
- * SystemNotification
- *
- * @version    7.6
- * @package    model
- * @subpackage communication
- * @author     Pablo Dall'Oglio
- * @copyright  Copyright (c) 2006 Adianti Solutions Ltd. (http://www.adianti.com.br)
- * @license    https://adiantiframework.com.br/license-template
+ * SystemNotification Active Record
+ * @author  <your-name-here>
  */
 class SystemNotification extends TRecord
 {
     const TABLENAME = 'system_notification';
-    const PRIMARYKEY= 'id';
+    const PRIMARYKEY = 'id';
     const IDPOLICY =  'max'; // {max, serial}
-    
-    
+
+
     /**
      * Constructor method
      */
@@ -36,20 +31,15 @@ class SystemNotification extends TRecord
     /**
      * Register notification
      */
-    public static function register( $user_to, $subject, $message, $action, $label, $icon = null, $date = null)
+    public static function register($user_to, $subject, $message, $action, $label, $icon = null)
     {
-        if ($action instanceof TAction)
-        {
-            $action = $action->serialize(false);
-        }
-        
-        TTransaction::open('communication');
+        TTransaction::open('sample');
         $object = new self;
-        $object->system_user_id    = TSession::getValue('userid');
+        $object->system_user_id    = SessaoService::buscarIdUsuarioLogado();
         $object->system_user_to_id = $user_to;
         $object->subject           = $subject;
         $object->message           = $message;
-        $object->dt_message        = empty($date) ? date("Y-m-d H:i:s") : $date;
+        $object->dt_message        = date("Y-m-d H:i:s");
         $object->action_url        = $action;
         $object->action_label      = $label;
         $object->icon              = $icon;

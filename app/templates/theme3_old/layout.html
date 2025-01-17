@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Studex</title>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <!-- Tell the browser to be responsive to screen width -->
+    <meta
+      content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no"
+      name="viewport"
+    />
+    <link
+      rel="shortcut icon"
+      href="../../images/favicon.ico"
+      type="image/x-icon"
+    />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+
+    {LIBRARIES} {HEAD}
+
+    <script
+      src="app/lib/include/admin-all.min.js?appver=722"
+      type="text/javascript"
+    ></script>
+    <link
+      href="app/lib/include/admin.min.css?appver=722"
+      rel="stylesheet"
+      type="text/css"
+      media="screen"
+    />
+    <script src="https://www.amcharts.com/lib/4/core.js"></script>
+    <script src="https://www.amcharts.com/lib/4/charts.js"></script>
+    <script src="https://www.amcharts.com/lib/4/themes/frozen.js"></script>
+    <script src="https://www.amcharts.com/lib/4/themes/animated.js"></script>
+
+    <link
+      href="app/templates/css/ajustes.css"
+      rel="stylesheet"
+      type="text/css"
+      media="screen"
+    />
+    <link
+      href="app/templates/{template}/css/AdminLTE.css"
+      rel="stylesheet"
+      type="text/css"
+      media="screen"
+    />
+    <link
+      href="app/templates/{template}/css/skins/_all-skins.min.css"
+      rel="stylesheet"
+      type="text/css"
+      media="screen"
+    />
+    <link
+      href="https://fonts.googleapis.com/icon?family=Material+Icons"
+      rel="stylesheet"
+    />
+  </head>
+
+  <body class="hold-transition skin-{$cor} sidebar-mini">
+    <div class="wrapper">
+      <header class="main-header">
+        <!-- Logo -->
+        <a href="index.php?class={$paginaInicial}" class="logo">
+          <!-- mini logo for sidebar mini 50x50 pixels -->
+          <span class="logo-mini"><b>STX</b></span>
+          <!-- logo for regular state and mobile devices -->
+          <span class="logo-lg"><b>Studex</b></span>
+        </a>
+        <!-- Header Navbar: style can be found in header.less -->
+        <nav class="navbar navbar-static-top" role="navigation">
+          <!-- Sidebar toggle button-->
+          <a
+            href="#"
+            class="sidebar-toggle"
+            data-toggle="offcanvas"
+            role="button"
+          >
+            <span class="sr-only">Toggle navigation</span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+          </a>
+          <div class="navbar-custom-menu">
+            <ul class="nav navbar-nav">
+              <!-- User Account: style can be found in dropdown.less -->
+              <li class="dropdown user user-menu">
+                <a href="#" class="dropdown-toggle" data-toggle="dropdown">
+                  <i class="fa fa-user"></i>
+                  <span class="hidden-xs">{username}</span>
+                </a>
+                <ul class="dropdown-menu">
+                  <!-- User image -->
+                  <li class="user-header" style="height: initial">
+                    <!-- <i class="fa fa-user fa-3x" style="color:white"></i> -->
+                    <!--      src="app/images/photos/{login}.jpg" -->
+                    <img
+                      style="border-radius: 50%"
+                      src="app/templates/{template}/img/avatar5.png"
+                      alt="User"
+                    />
+                    <!--  onError="this.onerror=null;this.src='app/templates/{template}/img/avatar5.png';" -->
+                    <p>
+                      {username}<br />
+                      <a
+                        href="index.php?class=SystemProfileView"
+                        style="color: white; font-size: 12px"
+                        >[_t{Profile}]</a
+                      >
+                    </p>
+                  </li>
+                  <!-- Menu Body -->
+                  <!-- Menu Footer-->
+                  <li class="user-footer">
+                    <div class="pull-left">
+                      <a
+                        generator="adianti"
+                        href="index.php?class=LoginForm&method=reloadPermissions&static=1"
+                        class="btn btn-default btn-flat"
+                        >_t{Reload}</a
+                      >
+                    </div>
+                    <div class="pull-right">
+                      <a
+                        generator="adianti"
+                        href="index.php?class=LoginForm&method=onLogout&static=1"
+                        class="btn btn-default btn-flat"
+                        >_t{Exit}</a
+                      >
+                    </div>
+                  </li>
+                </ul>
+              </li>
+            </ul>
+          </div>
+        </nav>
+      </header>
+      <!-- Left side column. contains the logo and sidebar -->
+      <aside class="main-sidebar">
+        <!-- sidebar: style can be found in sidebar.less -->
+        <section class="sidebar">
+          <!-- Sidebar user panel -->
+          <div class="user-panel">
+            <div class="pull-left image">
+              <!-- <i class="fa fa-user fa-2x" style="color:white"></i> -->
+              <!-- <img src="app/images/photos/{login}.jpg" onError="this.onerror=null;this.src='app/templates/{template}/img/avatar5.png';" style="border-radius:50%;margin-top:10px" alt="User" /> -->
+            </div>
+            <div class="pull-left info" style="position: initial">
+              <p style="white-space: break-spaces">{username}</p>
+              <span style="font-size: 10pt">{usermail}</span>
+            </div>
+          </div>
+          <!-- search form -->
+          <!-- /.search form -->
+          <!-- sidebar menu: : style can be found in sidebar.less -->
+          <ul class="sidebar-menu">
+            <li class="header">Menu</li>
+          </ul>
+          {MENU}
+        </section>
+        <!-- /.sidebar -->
+      </aside>
+
+      <!-- Content Wrapper. Contains page content -->
+      <div class="content-wrapper">
+        <!-- Main content -->
+        <section class="content">
+          <div id="adianti_div_content"></div>
+        </section>
+        <!-- /.content -->
+
+        <div id="adianti_online_content"></div>
+        <div id="adianti_online_content2"></div>
+
+        <div id="adianti_right_panel" class="right-panel"></div>
+      </div>
+      <!-- /.content-wrapper -->
+      <footer class="main-footer">
+        <div class="pull-right hidden-xs"><b>Versão</b> 2.0.0.4</div>
+        <strong>Appelsoft</strong>
+        <!--[IFADMIN]-->
+        <a
+          style="cursor: pointer; color: teal"
+          generator="adianti"
+          href="index.php?class=SystemModulesCheckView"
+        >
+          <i class="fa fa-code" aria-hidden="true"></i> PHP Modules
+        </a>
+        &nbsp;&nbsp;
+        <span
+          style="cursor: pointer; color: teal"
+          onclick="Adianti.showDebugPanel()"
+        >
+          <i class="fa fa-window-maximize" aria-hidden="true"></i> Debug Console
+        </span>
+        <!--[/IFADMIN]-->
+      </footer>
+
+      <div id="adianti_debug_panel" class="debug-panel">
+        <i
+          onclick="Adianti.hideDebugPanel()"
+          class="fa fa-times"
+          aria-hidden="true"
+          title="_t{Close}"
+        ></i>
+        <span> Request URL </span>
+        <span> Request Data </span>
+        <div id="request_url_panel"></div>
+        <div id="request_data_panel"></div>
+      </div>
+
+      <!-- Add the sidebar's background. This div must be placed
+           immediately after the control sidebar -->
+      <div class="control-sidebar-bg"></div>
+    </div>
+    <!-- ./wrapper -->
+
+    <!-- AdminLTE App -->
+    <script src="app/templates/{template}/js/app.min.js"></script>
+    <script src="app/templates/{template}/js/custom.js"></script>
+  </body>
+</html>

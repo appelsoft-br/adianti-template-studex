@@ -1,44 +1,35 @@
 <?php
-/**
- * SystemProfileView
- *
- * @version    7.6
- * @package    control
- * @subpackage admin
- * @author     Pablo Dall'Oglio
- * @copyright  Copyright (c) 2006 Adianti Solutions Ltd. (http://www.adianti.com.br)
- * @license    https://adiantiframework.com.br/license-template
- */
 class SystemProfileView extends TPage
 {
     public function __construct()
     {
         parent::__construct();
-        
-        $html = new THtmlRenderer('app/resources/system_profile.html');
+
+        $html = new THtmlRenderer('app/resources/profile.html');
         $replaces = array();
-        
-        try
-        {
-            TTransaction::open('permission');
-            
-            $user= SystemUser::newFromLogin(TSession::getValue('login'));
+
+        try {
+            TTransaction::open('sample');
+
+            $user = new Usuario(SessaoService::buscarIdUsuarioLogado());
             $replaces = $user->toArray();
             $replaces['frontpage'] = $user->frontpage_name;
             $replaces['groupnames'] = $user->getSystemUserGroupNames();
-            
+
             TTransaction::close();
-        }
-        catch (Exception $e)
-        {
+        } catch (Exception $e) {
             new TMessage('error', $e->getMessage());
         }
-        
+
         $html->enableSection('main', $replaces);
         $html->enableTranslation();
-        
+
+
         $container = TVBox::pack($html);
-        $container->style = 'width: 100%';
+        $container->style = 'width:80%';
         parent::add($container);
+    }
+    public function onEdit()
+    {
     }
 }

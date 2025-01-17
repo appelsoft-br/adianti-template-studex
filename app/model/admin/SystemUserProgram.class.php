@@ -1,21 +1,18 @@
 <?php
+
+use Adianti\Database\TRecord;
+
 /**
- * SystemUserProgram
- *
- * @version    7.6
- * @package    model
- * @subpackage admin
- * @author     Pablo Dall'Oglio
- * @copyright  Copyright (c) 2006 Adianti Solutions Ltd. (http://www.adianti.com.br)
- * @license    https://adiantiframework.com.br/license-template
+ * System_user_program Active Record
+ * @author  <your-name-here>
  */
 class SystemUserProgram extends TRecord
 {
     const TABLENAME = 'system_user_program';
-    const PRIMARYKEY= 'id';
+    const PRIMARYKEY = 'id';
     const IDPOLICY =  'max'; // {max, serial}
-    
-    
+
+
     /**
      * Constructor method
      */

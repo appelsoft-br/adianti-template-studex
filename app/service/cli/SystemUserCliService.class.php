@@ -5,13 +5,13 @@ class SystemUserCliService
      * Retorna todos produtos entre $from e $to
      * @param $request HTTP request
      */
-    public static function create( $request )
+    public static function create($request)
     {
-        TTransaction::open('permission');
-        $response = [];
-        
-        $request['password'] = SystemUser::passwordHash($request['password']);
-        
+        TTransaction::open('sample');
+        $response = array();
+
+        $request['password'] = md5($request['password']);
+
         $user = new SystemUser;
         $user->fromArray($request);
         $user->store();

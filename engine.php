@@ -1,72 +1,63 @@
 <?php
-require_once 'init.php';
 
-// AdiantiCoreApplication::setRouter(array('AdiantiRouteTranslator', 'translate'));
-AdiantiCoreApplication::setActionVerification(['SystemPermission', 'checkPermission']);
+use Adianti\Control\TAction;
+use Adianti\Core\AdiantiApplicationConfig;
+use Adianti\Core\AdiantiCoreApplication;
+use Adianti\Registry\TSession;
+use Adianti\Widget\Dialog\TMessage;
+
+require_once 'init.php';
 
 class TApplication extends AdiantiCoreApplication
 {
     public static function run($debug = null)
     {
-        new TSession;
-        ApplicationTranslator::setLanguage( TSession::getValue('user_language'), true ); // multi-lang
-        
-        if ($_REQUEST)
-        {
-            $ini = AdiantiApplicationConfig::get();
-            
+
+        $sessionHandler = new GerenciadorSessoes();
+        new TSession($sessionHandler);
+
+        if ($_REQUEST) {
+            $ini    = AdiantiApplicationConfig::get();
+            $debug  = is_null($debug) ? $ini['general']['debug'] : $debug;
             $class  = isset($_REQUEST['class']) ? $_REQUEST['class'] : '';
-            $method = isset($_REQUEST['method']) ? $_REQUEST['method'] : '';
             $public = in_array($class, $ini['permission']['public_classes']);
-            $debug  = is_null($debug)? $ini['general']['debug'] : $debug;
-            
+
             if (TSession::getValue('logged')) // logged
             {
-                if ( SystemPermission::checkPermission($class, $method) )
-                {
+                $programs = (array) TSession::getValue('programs'); // programs with permission
+                $programs = array_merge($programs, self::getDefaultPermissions());
+
+                if (isset($programs[$class]) or $public) {
                     parent::run($debug);
+                } else {
+                    new TMessage('error', _t('Permission denied'));
                 }
-                else if (self::hasDefaultPermissions($class))
-                {
-                    parent::run($debug);
-                }
-                else
-                {
-                    http_response_code(401);
-                    new TMessage('error', _t('Permission denied') );
-                }
-            }
-            else if ($class == 'LoginForm' || $public )
-            {
+            } else if ($class == 'LoginForm' or $public) {
                 parent::run($debug);
-            }
-            else
-            {
-                http_response_code(401);
-                new TMessage('error', _t('Permission denied'), new TAction(array('LoginForm','onLogout')) );
+            } else {
+                new TMessage('error', _t('Permission denied'), new TAction(array(LoginForm::class, 'onLogout')));
             }
         }
     }
-    
-    /**
-     * Return default programs for logged users
-     */
-    public static function hasDefaultPermissions($class)
+
+    public static function getDefaultPermissions()
     {
-        $default_permissions = ['Adianti\Base\TStandardSeek' => TRUE,
-                                'LoginForm' => TRUE,
-                                'AdiantiMultiSearchService' => TRUE,
-                                'AdiantiUploaderService' => TRUE,
-                                'AdiantiAutocompleteService' => TRUE,
-                                'SystemDocumentUploaderService' => TRUE,
-                                'EmptyPage' => TRUE,
-                                'MessageList' => TRUE,
-                                'NotificationList' => TRUE,
-                                'SearchBox' => TRUE,
-                                'SearchInputBox' => TRUE];
-        
-        return (isset($default_permissions[$class]) && $default_permissions[$class]);
-    } 
+        return [
+            'Adianti\Base\TStandardSeek' => TRUE,
+            'LoginForm' => TRUE,
+            'AdiantiMultiSearchService' => TRUE,
+            'AdiantiUploaderService' => TRUE,
+            'AdiantiAutocompleteService' => TRUE,
+            'SystemDocumentUploaderService' => TRUE,
+            'EmptyPage' => TRUE,
+            'MessageList' => TRUE,
+            'NotificationList' => TRUE,
+            'SearchBox' => TRUE,
+            'PfxToBase64Service' => TRUE,
+            'UploaderService' => TRUE,
+            'SearchInputBox' => TRUE
+        ];
+    }
 }
 
 TApplication::run();

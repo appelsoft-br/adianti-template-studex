@@ -1,20 +1,14 @@
 <?php
+
 /**
- * SystemGroupForm
- *
- * @version    7.6
- * @package    control
- * @subpackage admin
- * @author     Pablo Dall'Oglio
- * @copyright  Copyright (c) 2006 Adianti Solutions Ltd. (http://www.adianti.com.br)
- * @license    https://adiantiframework.com.br/license-template
+ * System_groupForm Registration
+ * @author  <your name here>
  */
 class SystemGroupForm extends TPage
 {
     protected $form; // form
     protected $program_list;
-    protected $user_list;
-    
+
     /**
      * Class constructor
      * Creates the page and the registration form
@@ -22,211 +16,237 @@ class SystemGroupForm extends TPage
     function __construct()
     {
         parent::__construct();
-        
-        parent::setTargetContainer('adianti_right_panel');
-        
+
         // creates the form
         $this->form = new BootstrapFormBuilder('form_System_group');
-        $this->form->setFormTitle( _t('Group') );
-        $this->form->enableClientValidation();
-        
+        $this->form->setFormTitle(_t('Group'));
+
         // create the form fields
         $id   = new TEntry('id');
         $name = new TEntry('name');
-        
+        $program_id = new TDBSeekButton('program_id', 'sample', 'form_System_group', 'SystemProgram', 'name', 'program_id', 'program_name');
+        $program_name = new TEntry('program_name');
+        $program_id->setSize('50');
+        $program_name->setSize('calc(100% - 200px)');
+        $program_name->setEditable(FALSE);
+
         // define the sizes
         $id->setSize('30%');
-        $name->setSize('100%');
+        $name->setSize('70%');
 
         // validations
         $name->addValidation('name', new TRequiredValidator);
-        
+
         // outras propriedades
         $id->setEditable(false);
-        
-        $this->form->addFields( [new TLabel('ID')], [$id]);
-        $this->form->addFields( [new TLabel(_t('Name'))], [$name]);
-        
-        $this->program_list = new TCheckList('program_list');
-        $this->program_list->setIdColumn('id');
-        $this->program_list->addColumn('id',    'ID',    'center',  '10%');
-        $col_name    = $this->program_list->addColumn('name', _t('Name'),    'left',   '50%');
-        $col_program = $this->program_list->addColumn('controller', _t('Menu path'),    'left',   '40%');
-        $col_program->enableAutoHide(500);
-        $this->program_list->setHeight(350);
+
+        $frame_programs = new TFrame;
+        $frame_programs->setLegend(_t('Programs'));
+        $frame_programs->style .= ';margin:0px;width:95%';
+
+        $this->form->addFields([new TLabel('ID')], [$id]);
+        $this->form->addFields([new TLabel(_t('Name'))], [$name]);
+        $this->form->addContent([$frame_programs]);
+
+        $this->program_list = new TQuickGrid();
+        $this->program_list->setHeight(200);
         $this->program_list->makeScrollable();
-        
-        $col_name->enableSearch();
-        $search_program = $col_name->getInputSearch();
-        $search_program->placeholder = _t('Search');
-        $search_program->style = 'margin-left: 4px; border-radius: 4px';
-        
-        $col_program->setTransformer( function($value, $object, $row) {
-            $menuparser = new TMenuParser('menu.xml');
-            $paths = $menuparser->getPath($value);
-            
-            if ($paths)
-            {
-                return implode(' &raquo; ', $paths);
-            }
-        });
-        
-        $this->user_list = new TCheckList('user_list');
-        $this->user_list->setIdColumn('id');
-        $this->user_list->addColumn('id',    'ID',    'center',  '10%');
-        $col_user = $this->user_list->addColumn('name', _t('Name'),    'left',   '90%');
-        $this->user_list->setHeight(350);
-        $this->user_list->makeScrollable();
-        
-        $col_user->enableSearch();
-        $search_user = $col_user->getInputSearch();
-        $search_user->placeholder = _t('Search');
-        $search_user->style = 'margin-left: 4px; border-radius: 4px';
-        
-        $subform = new BootstrapFormBuilder;
-        $subform->setProperty('style', 'border:none; box-shadow:none');
-        
-        $subform->appendPage( _t('Programs') );
-        $subform->addFields( [$this->program_list] );
-        
-        $subform->appendPage( _t('Users') );
-        $subform->addFields( [$this->user_list] );
-        
-        $this->form->addContent( [$subform] );
-        
-        TTransaction::open('permission');
-        $this->program_list->addItems( SystemProgram::get() );
-        $this->user_list->addItems( SystemUser::get() );
-        TTransaction::close();
-        
-        $btn = $this->form->addAction( _t('Save'), new TAction(array($this, 'onSave')), 'far:save' );
-        $btn->class = 'btn btn-sm btn-primary';
-        
-        $this->form->addActionLink( _t('Clear'), new TAction(array($this, 'onEdit')),  'fa:eraser red' );
-        //$this->form->addActionLink( _t('Back'), new TAction(array('SystemGroupList','onReload')),  'far:arrow-alt-circle-left blue' );
-        
-        $this->form->addHeaderActionLink(_t('Close'), new TAction([$this, 'onClose']), 'fa:times red');
-        
+        $this->program_list->style = 'width: 100%';
+        $this->program_list->id = 'program_list';
+        $this->program_list->disableDefaultClick();
+        $this->program_list->addQuickColumn('', 'delete', 'center', '5%');
+        $this->program_list->addQuickColumn('Id', 'id', 'left', '10%');
+        $this->program_list->addQuickColumn(_t('Program'), 'name', 'left', '85%');
+        $this->program_list->createModel();
+
+        $this->form->addAction(_t('Save'), new TAction(array($this, 'onSave')), 'far:save');
+        $this->form->addAction(_t('New'), new TAction(array($this, 'onEdit')),  'fa:eraser red');
+        $this->form->addAction(_t('Back to the listing'), new TAction(array('SystemGroupList', 'onReload')),  'fa:table blue');
+
+        $add_button  = TButton::create('add',  array($this, 'onAddProgram'), _t('Add'), 'fa:plus green');
+
+        $this->form->addField($program_id);
+        $this->form->addField($program_name);
+        $this->form->addField($add_button);
+
+        $hbox = new THBox;
+        $hbox->add($program_id);
+        $hbox->add($program_name, 'display:initial');
+        $hbox->add($add_button);
+        $hbox->style = 'margin: 4px';
+        $vbox = new TVBox;
+        $vbox->style = 'width:100%';
+        $vbox->add($hbox);
+        $vbox->add($this->program_list);
+        $frame_programs->add($vbox);
+
         $container = new TVBox;
-        $container->style = 'width:100%';
-        // $container->add(new TXMLBreadCrumb('menu.xml', 'SystemGroupList'));
+        $container->style = 'width:90%';
+        $container->add(new TXMLBreadCrumb('menu.xml', 'SystemGroupList'));
         $container->add($this->form);
-        
+
         // add the form to the page
         parent::add($container);
     }
-    
+
+    /**
+     * Remove program from session
+     */
+    public static function deleteProgram($param)
+    {
+        $programs = TSession::getValue('program_list');
+        unset($programs[$param['id']]);
+        TSession::setValue('program_list', $programs);
+    }
+
     /**
      * method onSave()
      * Executed whenever the user clicks at the save button
      */
-    public function onSave($param)
+    public static function onSave($param)
     {
-        try
-        {
-            // open a transaction with database 'permission'
-            TTransaction::open('permission');
-            
-            $data = $this->form->getData();
-            $this->form->setData($data);
-            
+        try {
+            // open a transaction with database 'sample'
+            TTransaction::open('sample');
+
             // get the form data into an active record System_group
             $object = new SystemGroup;
-            $object->fromArray( (array) $data );
+            $object->fromArray($param);
             $object->store();
             $object->clearParts();
-            
-            if (!empty($data->program_list))
-            {
-                foreach ($data->program_list as $program_id)
-                {
-                    $object->addSystemProgram( new SystemProgram( $program_id ) );
+
+            $programs = TSession::getValue('program_list');
+            if (!empty($programs)) {
+                foreach ($programs as $program) {
+                    $object->addSystemProgram(new SystemProgram($program['id']));
                 }
             }
-            
-            if (!empty($data->user_list))
-            {
-                foreach ($data->user_list as $user_id)
-                {
-                    $object->addSystemUser( new SystemUser( $user_id ) );
-                }
-            }
-            
+
             $data = new stdClass;
             $data->id = $object->id;
             TForm::sendData('form_System_group', $data);
-            
+
             TTransaction::close(); // close the transaction
-            
-            $pos_action = new TAction(['SystemGroupList', 'onReload']);
-            new TMessage('info', _t('Record saved'), $pos_action); // shows the success message
-        }
-        catch (Exception $e) // in case of exception
+            new TMessage('info', _t('Record saved')); // shows the success message
+        } catch (Exception $e) // in case of exception
         {
+            // shows the exception error message
             new TMessage('error', $e->getMessage());
+
+            // undo all pending operations
             TTransaction::rollback();
         }
     }
-    
+
     /**
      * method onEdit()
      * Executed whenever the user clicks at the edit button da datagrid
      */
     function onEdit($param)
     {
-        try
-        {
-            if (isset($param['key']))
-            {
+        try {
+            if (isset($param['key'])) {
                 // get the parameter $key
-                $key=$param['key'];
-                
-                // open a transaction with database 'permission'
-                TTransaction::open('permission');
-                
+                $key = $param['key'];
+
+                // open a transaction with database 'sample'
+                TTransaction::open('sample');
+
                 // instantiates object System_group
                 $object = new SystemGroup($key);
-                
-                $program_ids = array();
-                foreach ($object->getSystemPrograms() as $program)
-                {
-                    $program_ids[] = $program->id;
+
+                $data = array();
+                foreach ($object->getSystemPrograms() as $program) {
+                    $data[$program->id] = $program->toArray();
+
+                    $item = new stdClass;
+                    $item->id = $program->id;
+                    $item->name = $program->name;
+
+                    $i = new TElement('i');
+                    $i->{'class'} = 'fas fa-trash-alt red';
+                    $btn = new TElement('a');
+                    $btn->{'onclick'} = "__adianti_ajax_exec('class=SystemGroupForm&method=deleteProgram&id={$program->id}');$(this).closest('tr').remove();";
+                    $btn->{'class'} = 'btn btn-default btn-sm';
+                    $btn->add($i);
+
+                    $item->delete = $btn;
+                    $tr = $this->program_list->addItem($item);
+                    $tr->{'style'} = 'width: 100%;display: inline-table;';
                 }
-                
-                $object->program_list = $program_ids;
-                
-                
-                $user_ids = array();
-                foreach ($object->getSystemUsers() as $user)
-                {
-                    $user_ids[] = $user->id;
-                }
-                
-                $object->user_list = $user_ids;
-                
+
                 // fill the form with the active record data
                 $this->form->setData($object);
-                
+
                 // close the transaction
                 TTransaction::close();
-            }
-            else
-            {
+
+                TSession::setValue('program_list', $data);
+            } else {
                 $this->form->clear();
+                TSession::setValue('program_list', null);
             }
-        }
-        catch (Exception $e) // in case of exception
+        } catch (Exception $e) // in case of exception
         {
+            // shows the exception error message
             new TMessage('error', $e->getMessage());
+
+            // undo all pending operations
             TTransaction::rollback();
         }
     }
-    
+
     /**
-     * on close
+     * Add a program
      */
-    public static function onClose($param)
+    public static function onAddProgram($param)
     {
-        TScript::create("Template.closeRightPanel()");
+        try {
+            $id = $param['program_id'];
+            $program_list = TSession::getValue('program_list');
+
+            if (!empty($id) and empty($program_list[$id])) {
+                TTransaction::open('sample');
+                $program = SystemProgram::find($id);
+                $program_list[$id] = $program->toArray();
+                TSession::setValue('program_list', $program_list);
+                TTransaction::close();
+
+                $i = new TElement('i');
+                $i->{'class'} = 'fas fa-trash-alt red';
+                $btn = new TElement('a');
+                $btn->{'onclick'} = "__adianti_ajax_exec(\'class=SystemGroupForm&method=deleteProgram&id=$id\');$(this).closest(\'tr\').remove();";
+                $btn->{'class'} = 'btn btn-default btn-sm';
+                $btn->add($i);
+
+                $tr = new TTableRow;
+                $tr->{'class'} = 'tdatagrid_row_odd';
+                $tr->{'style'} = 'width: 100%;display: inline-table;';
+                $cell = $tr->addCell($btn);
+                $cell->{'style'} = 'text-align:center';
+                $cell->{'class'} = 'tdatagrid_cell';
+                $cell->{'width'} = '5%';
+                $cell = $tr->addCell($program->id);
+                $cell->{'class'} = 'tdatagrid_cell';
+                $cell->{'width'} = '10%';
+                $cell = $tr->addCell($program->name);
+                $cell->{'class'} = 'tdatagrid_cell';
+                $cell->{'width'} = '85%';
+
+                TScript::create("tdatagrid_add_serialized_row('program_list', '$tr');");
+
+                $data = new stdClass;
+                $data->program_id = '';
+                $data->program_name = '';
+                TForm::sendData('form_System_group', $data);
+            } else {
+                $data = new stdClass;
+                $data->program_id = '';
+                $data->program_name = '';
+                TForm::sendData('form_System_group', $data);
+            }
+        } catch (Exception $e) {
+            new TMessage('error', $e->getMessage());
+        }
     }
 }

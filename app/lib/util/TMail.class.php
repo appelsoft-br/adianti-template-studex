@@ -5,11 +5,11 @@ use PHPMailer\PHPMailer\Exception;
 /**
  * TMail
  *
- * @version    7.6
+ * @version    7.0
  * @package    util
  * @author     Pablo Dall'Oglio
  * @copyright  Copyright (c) 2006 Adianti Solutions Ltd. (http://www.adianti.com.br)
- * @license    https://adiantiframework.com.br/license-template
+ * @license    https://adiantiframework.com.br/license
  */
 class TMail
 {

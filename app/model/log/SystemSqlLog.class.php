@@ -1,20 +1,19 @@
 <?php
+
+use Adianti\Database\TRecord;
+use Adianti\Database\TTransaction;
+use Adianti\Log\AdiantiLoggerInterface;
+
 /**
- * SystemSqlLog
- *
- * @version    7.6
- * @package    model
- * @subpackage log
- * @author     Pablo Dall'Oglio
- * @copyright  Copyright (c) 2006 Adianti Solutions Ltd. (http://www.adianti.com.br)
- * @license    https://adiantiframework.com.br/license-template
+ * SystemSqllog Active Record
+ * @author  <your-name-here>
  */
-class SystemSqlLog extends TRecord
+class SystemSqlLog extends TRecord implements AdiantiLoggerInterface
 {
     const TABLENAME = 'system_sql_log';
-    const PRIMARYKEY= 'id';
+    const PRIMARYKEY = 'id';
     const IDPOLICY =  'max'; // {max, serial}
-    
+
     /**
      * Constructor method
      */
@@ -22,41 +21,36 @@ class SystemSqlLog extends TRecord
     {
         parent::__construct($id, $callObjectLoad);
         parent::addAttribute('logdate');
-        parent::addAttribute('log_year');
-        parent::addAttribute('log_month');
-        parent::addAttribute('log_day');
         parent::addAttribute('login');
         parent::addAttribute('database_name');
         parent::addAttribute('sql_command');
         parent::addAttribute('statement_type');
-        parent::addAttribute('access_ip');
-        parent::addAttribute('transaction_id');
-        parent::addAttribute('log_trace');
-        parent::addAttribute('session_id');
-        parent::addAttribute('class_name');
-        parent::addAttribute('php_sapi');
-        parent::addAttribute('request_id');
     }
-    
+
     /**
-     * Return formatted log trace
+     * Writes an message in the global logger
+     * @param  $message Message to be written
      */
-    public function get_log_trace_formatted()
+    public function write($message)
     {
-        $log = $this->log_trace;
-        
-        preg_match_all('/#(.*)app\/control(.*)/', $log, $matches);
-        
-        if (count($matches[0]) > 0)
+        $dbname = TTransaction::getDatabase();
+
+        // avoid log of log
+        /* comentei log
+        if ($dbname !== 'log' AND (in_array(substr($message,0,6), array('INSERT', 'UPDATE', 'DELETE') ) ) )
         {
-            foreach ($matches[0] as $match)
-            {
-                $log = str_replace($match, "<b class='red'>{$match}</b>", $log);
-            }
+            $time = date("Y-m-d H:i:s");
+            
+            TTransaction::open('log');
+            $object = new self;
+            $object->logdate = $time;
+            $object->login = SessaoService::buscarLoginUsuario();
+            $object->database_name = $dbname;
+            $object->sql_command = $message;
+            $object->statement_type = strtoupper(substr($message,0,6));
+            $object->store();
+            TTransaction::close();
         }
-        
-        $log = str_replace('):', '):<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;', $log);
-        
-        return $log;
+        */
     }
 }

@@ -1,21 +1,16 @@
 <?php
+
 /**
- * SystemMessage
- *
- * @version    7.6
- * @package    model
- * @subpackage communication
- * @author     Pablo Dall'Oglio
- * @copyright  Copyright (c) 2006 Adianti Solutions Ltd. (http://www.adianti.com.br)
- * @license    https://adiantiframework.com.br/license-template
+ * SystemMessage Active Record
+ * @author  <your-name-here>
  */
 class SystemMessage extends TRecord
 {
     const TABLENAME = 'system_message';
-    const PRIMARYKEY= 'id';
+    const PRIMARYKEY = 'id';
     const IDPOLICY =  'max'; // {max, serial}
-    
-    
+
+
     /**
      * Constructor method
      */
@@ -29,34 +24,22 @@ class SystemMessage extends TRecord
         parent::addAttribute('dt_message');
         parent::addAttribute('checked');
     }
-    
-    /**
-     * Get source user
-     */
+
     public function get_user_from()
     {
-        return SystemUser::findInTransaction('permission', $this->system_user_id);
+        return SystemUser::findInTransaction('sample', $this->system_user_id);
     }
-    
-    /**
-     * Get target user
-     */
+
     public function get_user_to()
     {
-        return SystemUser::findInTransaction('permission', $this->system_user_to_id);
+        return SystemUser::findInTransaction('sample', $this->system_user_to_id);
     }
-    
-    /**
-     * Get the another user
-     */
+
     public function get_user_mixed()
     {
-        if ($this->system_user_id == TSession::getValue('userid'))
-        {
+        if ($this->system_user_id == SessaoService::buscarIdUsuarioLogado()) {
             return $this->get_user_to();
-        }
-        else
-        {
+        } else {
             return $this->get_user_from();
         }
     }

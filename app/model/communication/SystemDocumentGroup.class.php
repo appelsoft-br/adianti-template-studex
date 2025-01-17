@@ -1,21 +1,18 @@
 <?php
+
+use Adianti\Database\TRecord;
+
 /**
- * SystemDocumentGroup
- *
- * @version    7.6
- * @package    model
- * @subpackage communication
- * @author     Pablo Dall'Oglio
- * @copyright  Copyright (c) 2006 Adianti Solutions Ltd. (http://www.adianti.com.br)
- * @license    https://adiantiframework.com.br/license-template
+ * SystemDocumentGroup Active Record
+ * @author  <your-name-here>
  */
 class SystemDocumentGroup extends TRecord
 {
     const TABLENAME = 'system_document_group';
-    const PRIMARYKEY= 'id';
+    const PRIMARYKEY = 'id';
     const IDPOLICY =  'max'; // {max, serial}
-    
-    
+
+
     /**
      * Constructor method
      */

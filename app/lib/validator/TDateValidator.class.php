@@ -2,11 +2,11 @@
 /**
  * Date validation
  *
- * @version    7.6
+ * @version    1.0
  * @package    validator
  * @author     Pablo Dall'Oglio
  * @copyright  Copyright (c) 2006-2012 Adianti Solutions Ltd. (http://www.adianti.com.br)
- * @license    https://adiantiframework.com.br/license-template
+ * @license    https://adiantiframework.com.br/license
  */
 class TDateValidator extends TFieldValidator
 {

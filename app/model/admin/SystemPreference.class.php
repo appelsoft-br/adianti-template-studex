@@ -1,20 +1,19 @@
 <?php
+
+use Adianti\Database\TCriteria;
+use Adianti\Database\TRecord;
+use Adianti\Database\TRepository;
+
 /**
  * SystemPreference
- *
- * @version    7.6
- * @package    model
- * @subpackage admin
- * @author     Pablo Dall'Oglio
- * @copyright  Copyright (c) 2006 Adianti Solutions Ltd. (http://www.adianti.com.br)
- * @license    https://adiantiframework.com.br/license-template
+ * @author  <your-name-here>
  */
 class SystemPreference extends TRecord
 {
     const TABLENAME  = 'system_preference';
     const PRIMARYKEY = 'id';
     const IDPOLICY   = 'max'; // {max, serial}
-    
+
     /**
      * Constructor method
      */
@@ -23,7 +22,12 @@ class SystemPreference extends TRecord
         parent::__construct($id, $callObjectLoad);
         parent::addAttribute('value');
     }
-    
+
+    public static function liberaFinanceiro()
+    {
+        $flag = new SystemPreference('flag_permite_venda_negativado');
+        return $flag->value;
+    }
     /**
      * Retorna uma preferência
      * @param $id Id da preferência
@@ -33,7 +37,7 @@ class SystemPreference extends TRecord
         $preference = new SystemPreference($id);
         return $preference->value;
     }
-    
+
     /**
      * Altera uma preferência
      * @param $id  Id da preferência
@@ -42,13 +46,12 @@ class SystemPreference extends TRecord
     public static function setPreference($id, $value)
     {
         $preference = SystemPreference::find($id);
-        if ($preference)
-        {
+        if ($preference) {
             $preference->value = $value;
             $preference->store();
         }
     }
-    
+
     /**
      * Retorna um array com todas preferências
      */
@@ -57,11 +60,9 @@ class SystemPreference extends TRecord
         $rep = new TRepository('SystemPreference');
         $objects = $rep->load(new TCriteria);
         $dataset = array();
-        
-        if ($objects)
-        {
-            foreach ($objects as $object)
-            {
+
+        if ($objects) {
+            foreach ($objects as $object) {
                 $property = $object->id;
                 $value    = $object->value;
                 $dataset[$property] = $value;
