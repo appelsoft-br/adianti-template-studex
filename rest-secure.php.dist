@@ -28,15 +28,26 @@ class AdiantiRestServer
             {
                 if (substr($headers['Authorization'], 0, 5) == 'Basic')
                 {
-                    if (empty($ini['general']['rest_key']))
+                    if (class_exists($class) && defined("{$class}::REST_KEY") and (!empty($class::REST_KEY)))
                     {
-                        throw new Exception( _t('REST key not defined') );
+                        if ($class::REST_KEY !== substr($headers['Authorization'], 6))
+                        {
+                            http_response_code(401);
+                            return json_encode( array('status' => 'error', 'data' => _t('Authorization error')));
+                        }
                     }
-					
-                    if ($ini['general']['rest_key'] !== substr($headers['Authorization'], 6))
+                    else
                     {
-                        http_response_code(401);
-                        return json_encode( array('status' => 'error', 'data' => _t('Authorization error')));
+                        if (empty($ini['general']['rest_key']))
+                        {
+                            throw new Exception( _t('REST key not defined') );
+                        }
+                        
+                        if ($ini['general']['rest_key'] !== substr($headers['Authorization'], 6))
+                        {
+                            http_response_code(401);
+                            return json_encode( array('status' => 'error', 'data' => _t('Authorization error')));
+                        }
                     }
                 }
                 else if (substr($headers['Authorization'], 0, 6) == 'Bearer')

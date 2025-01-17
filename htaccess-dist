@@ -75,17 +75,6 @@ RewriteRule ^system-preferences$ index.php?class=SystemPreferenceForm&method=onE
 RewriteRule ^xhr-system-preferences$ engine.php?class=SystemPreferenceForm&method=onEdit&%{QUERY_STRING} [NC]
 
 
-RewriteRule ^system-document-category-list$ index.php?class=SystemDocumentCategoryFormList&method=onReload&%{QUERY_STRING} [NC]
-RewriteRule ^system-document-category-edit$ index.php?class=SystemDocumentCategoryFormList&method=onEdit&%{QUERY_STRING} [NC]
-RewriteRule ^system-document-category-ondelete$ index.php?class=SystemDocumentCategoryFormList&method=onDelete&%{QUERY_STRING} [NC]
-RewriteRule ^system-document-category-delete$ index.php?class=SystemDocumentCategoryFormList&method=Delete&%{QUERY_STRING} [NC]
-
-RewriteRule ^xhr-system-document-category-list$ engine.php?class=SystemDocumentCategoryFormList&method=onReload&%{QUERY_STRING} [NC]
-RewriteRule ^xhr-system-document-category-edit$ engine.php?class=SystemDocumentCategoryFormList&method=onEdit&%{QUERY_STRING} [NC]
-RewriteRule ^xhr-system-document-category-ondelete$ engine.php?class=SystemDocumentCategoryFormList&method=onDelete&%{QUERY_STRING} [NC]
-RewriteRule ^xhr-system-document-category-delete$ engine.php?class=SystemDocumentCategoryFormList&method=Delete&%{QUERY_STRING} [NC]
-
-
 RewriteRule ^system-access-log-stat$ index.php?class=SystemAccessLogStats&%{QUERY_STRING} [NC]
 RewriteRule ^xhr-system-access-log-stat$ engine.php?class=SystemAccessLogStats&%{QUERY_STRING} [NC]
 
