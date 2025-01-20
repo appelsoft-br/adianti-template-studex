@@ -72,6 +72,41 @@ function number_format (number, decimals, dec_point, thousands_sep) {
     return s.join(dec);
 }
 
+var pretty = {};
+pretty.json = {
+   replacer: function(match, pIndent, pKey, pVal, pEnd) {
+      var key = '<span class=json-key>';
+      var val = '<span class=json-value>';
+      var str = '<span class=json-string>';
+      var r = pIndent || '';
+      if (pKey)
+         r = r + key + pKey.replace(/[": ]/g, '') + '</span>: ';
+      if (pVal)
+         r = r + (pVal[0] == '"' ? str : val) + pVal + '</span>';
+      return r + (pEnd || '');
+      },
+   print: function(obj) {
+      var jsonLine = /^( *)("[\w]+": )?("[^"]*"|[\w.+-]*)?([,[{])?$/mg;
+      return JSON.stringify(obj, null, 3)
+         .replace(/&/g, '&amp;').replace(/\\"/g, '&quot;')
+         .replace(/</g, '&lt;').replace(/>/g, '&gt;')
+         .replace(jsonLine, pretty.json.replacer);
+      }
+   };
+
+Template.updateDebugPanel = function() {
+    try {
+        var url  = Adianti.requestURL;
+        var body = Adianti.requestData;
+        url = url.replace('engine.php?', '');
+        $('#request_url_panel').html( pretty.json.print(__adianti_query_to_json(urldecode(url)), undefined, 4) );
+        $('#request_data_panel').html( pretty.json.print(__adianti_query_to_json(urldecode(body)), undefined, 4) );
+    }
+    catch (e) {
+        console.log(e);
+    }
+}
+
 Template.onAfterLoad = function(url, data) {
     let view_width     = $( document ).width() >= 800 ? 780 : ($( document ).width());
     let curtain_offset = $( document ).width() >= 800 ? 20  : 0;
@@ -126,7 +161,7 @@ Template.onAfterLoad = function(url, data) {
         
         var warnings = $('#adianti_right_panel').clone().find('div[page_name],script').remove().end().html();
         $('#adianti_right_panel').find('[page_name]').last().prepend(warnings);
-        
+        $("#adianti_right_panel").animate({ scrollTop: 0 }, "fast");
     }
     else if ( (url.indexOf('&static=1') == -1) && (data.indexOf('widget="TWindow"') == -1) && ! into_right_panel ) {
         if ($('#adianti_right_panel').is(":visible")) {
@@ -158,3 +193,30 @@ Template.closeRightPanel = function () {
         }}, 320);
     }
 }
+
+Template.closeRightPanels = function() {
+    $('#adianti_right_panel').hide('slide',{direction:'right', complete: function() {
+        $('body').css('overflow', 'unset');
+        $('#adianti_right_panel').html('');
+    }},320)
+}
+
+Template.closeWindows = function() {
+    $('[widget="TWindow"]').remove();
+}
+
+Template.updateMessageDropdown = function() {
+    $.get('engine.php?class=SystemMessageDropdown', function(data) {
+        $('#envelope_messages').html(data);
+    });
+}
+
+Template.updateNotificationDropdown = function() {
+    $.get('engine.php?class=SystemNotificationDropdown', function(data) {
+        $('#envelope_notifications').html(data);
+    });
+}
+
+Template.wikiPagePicker = function(){
+    __adianti_load_page('index.php?class=SystemWikiPagePicker');
+};

@@ -85,11 +85,56 @@ class ApplicationAuthenticationService
         TSession::setValue('usermail', $user->email);
         TSession::setValue('frontpage', '');
         TSession::setValue('programs', $programs);
+        SessaoService::salvarTipoUsuario($user->tipo);
 
         if (!empty($user->unit)) {
             TSession::setValue('userunitid', $user->unit->id);
             TSession::setValue('userunitname', $user->unit->name);
         }
+        
+        if (TAPCache::enabled())
+        {
+            TAPCache::setValue('session_'.TSession::getValue('login'), session_id());
+        }
+
+        switch ($user->tipo) {
+            case TipoUsuario::FUNCIONARIO_REGIONAL:
+                $cliente_id = Database::buscarPrimeiro("Select clientesId from clientes_usuarios where login = '{$data->login}'");
+                SessaoService::salvarIdRegional($cliente_id);
+                TSession::setValue('username', $user->nome);
+                $paginaInicial = 'HomeRegional';
+                break;
+            case TipoUsuario::ADMIN_REGIONAL:
+                $cliente_id = Database::buscarPrimeiro("Select id from clientes where login = '{$data->login}'");
+                $dados_usuario = Database::executa("Select * from clientes where login = '{$data->login}'");
+                SessaoService::salvarIdRegional($cliente_id);
+                TSession::setValue('username', $dados_usuario[0]['nome']);
+                $paginaInicial = 'HomeRegional';
+                break;
+            case TipoUsuario::ADMIN:
+                $paginaInicial = 'WelcomeView';
+                break;
+            case TipoUsuario::FUNCIONARIO_MATRIZ:
+                $vendedor_id = Database::buscarPrimeiro("Select vendedor_id from funcionarios where login = '{$data->login}'");
+                SessaoService::salvarIdVendedor($vendedor_id);
+                if (TSession::getValue('usergroupids') == '28,2') {
+                    $paginaInicial = 'EntradaVendaList';
+                } else {
+                    $paginaInicial = 'WelcomeView';
+                }
+                break;
+            case TipoUsuario::VENDEDOR:
+                $vendedor_id = Database::buscarPrimeiro("Select id from pgto_vendedores where usuario_id = '{$user->id}'");
+                SessaoService::salvarIdVendedor($vendedor_id);
+                $regional_id = Database::buscarPrimeiro("select clientesId from pgto_vendedores where login ='{$user->id}'");
+                SessaoService::salvarIdRegional($regional_id);
+                $paginaInicial = 'HomeVendedor';
+                break;
+            default:
+                $paginaInicial = 'SistemaAntigo';
+                break;
+        }
+        TSession::setValue('frontpage', $paginaInicial);
     }
 
     /**
@@ -121,5 +166,48 @@ class ApplicationAuthenticationService
         SessaoService::salvarIdUsuarioLogado($userid);
         TSession::setValue('username', $name);
         TSession::setValue('usermail', $email);
+    }
+    
+    /**
+     * Check multi session
+     */
+    public static function checkMultiSession()
+    {
+        $ini = AdiantiApplicationConfig::get();
+        
+        if (!TSession::getValue('logged'))
+        {
+            return;
+        }
+        
+        if (!isset($ini['general']['concurrent_sessions']))
+        {
+            return;
+        }
+        
+        if ($ini['general']['concurrent_sessions'] == '1')
+        {
+            return;
+        }
+        
+        if (!TAPCache::enabled())
+        {
+            new TMessage('error', AdiantiCoreTranslator::translate('PHP Module not found'). ': APCU');
+            return;
+        }
+        
+        $current_session = TAPCache::getValue('session_'.TSession::getValue('login'));
+        if ($current_session)
+        {
+            if ($current_session !== session_id())
+            {
+                SystemAccessLogService::registerLogout();
+                TSession::freeSession();
+                
+                $class = 'LoginForm';
+                AdiantiCoreApplication::gotoPage($class, 'onLoad');
+                return;
+            }
+        }
     }
 }

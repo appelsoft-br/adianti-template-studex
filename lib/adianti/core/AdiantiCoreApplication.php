@@ -20,7 +20,7 @@ use Throwable;
 /**
  * Basic structure to run a web application
  *
- * @version    7.6
+ * @version    8.0
  * @package    core
  * @author     Pablo Dall'Oglio
  * @copyright  Copyright (c) 2006 Adianti Solutions Ltd. (http://www.adianti.com.br)
@@ -94,24 +94,30 @@ class AdiantiCoreApplication
                     if ($debug) {
                         new TExceptionView($e);
                         $content = ob_get_contents();
-                    } else {
+                    } 
+                    else
+                    {
                         new TMessage('error', $e->getMessage());
                         $content = ob_get_contents();
                     }
                     self::notificarErrosDiscord($e);
                     ob_end_clean();
-                } catch (Error $e) {
-
+                }
+                catch (Error $e)
+                {
                     ob_start();
-                    if ($debug) {
+                    if ($debug)
+                    {
                         new TExceptionView($e);
                         $content = ob_get_contents();
-                    } else {
+                    }
+                    else
+                    {
                         new TMessage('error', $e->getMessage());
                         $content = ob_get_contents();
                     }
-                    ob_end_clean();
                     self::notificarErrosDiscord($e);
+                    ob_end_clean();
                 }
             }
         } else if (!empty($class)) {
@@ -296,6 +302,20 @@ class AdiantiCoreApplication
         TScript::create("__adianti_load_page('{$query}');", true, 1);
     }
 
+    /**
+     * Load a page simplified mode
+     *
+     * @param $class class name
+     * @param $method method name
+     * @param $parameters array of parameters
+     */
+    public static function loadPageSimple($class, $method = NULL, $parameters = NULL)
+    {
+        $query = self::buildHttpQuery($class, $method, $parameters);
+        
+        TScript::create("__adianti_load_page('{$query}', null, false);", true, 1);
+    }
+    
     /**
      * Load a page url
      *

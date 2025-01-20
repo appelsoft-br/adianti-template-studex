@@ -1,41 +1,22 @@
 <?php
-
-use Adianti\Core\AdiantiApplicationConfig;
-use Adianti\Core\AdiantiCoreTranslator;
-
-if (version_compare(PHP_VERSION, '7.4.0') == -1) {
-    die('The minimum version required for PHP is 7.4.0');
-}
-/* Transferido para app/service/Ini.php
-if (!file_exists('app/config/application.ini'))
+if (version_compare(PHP_VERSION, '8.0.0') == -1)
 {
-    die('Application configuration file not found');
+    die ('The minimum version required for PHP is 8.0.0');
 }
-*/
 
 // define the autoloader
 require_once 'lib/adianti/core/AdiantiCoreLoader.php';
 spl_autoload_register(array('Adianti\Core\AdiantiCoreLoader', 'autoload'));
 Adianti\Core\AdiantiCoreLoader::loadClassMap();
 
+// vendor autoloader
 $loader = require 'vendor/autoload.php';
 $loader->register();
 
-// read configurations
-$ini = (new Ini())->parse();
-date_default_timezone_set($ini['general']['timezone']);
-AdiantiCoreTranslator::setLanguage($ini['general']['language']);
-ApplicationTranslator::setLanguage($ini['general']['language']);
-AdiantiApplicationConfig::load($ini);
-AdiantiApplicationConfig::apply();
+// apply app configurations
+AdiantiApplicationConfig::start();
 
 // define constants
-define('APPLICATION_NAME', $ini['general']['application']);
-define('OS', strtoupper(substr(PHP_OS, 0, 3)));
 define('PATH', dirname(__FILE__));
-define('LANG', $ini['general']['language']);
-
-// custom session name
-session_name('PHPSESSID_' . $ini['general']['application']);
 
 setlocale(LC_ALL, 'C');

@@ -1,4 +1,17 @@
 <?php
+
+use Adianti\Database\TTransaction;
+
+/**
+ * SystemChangeLogTrait
+ *
+ * @version    8.0
+ * @package    model
+ * @subpackage log
+ * @author     Pablo Dall'Oglio
+ * @copyright  Copyright (c) 2006 Adianti Solutions Ltd. (http://www.adianti.com.br)
+ * @license    https://adiantiframework.com.br/license-template
+ */
 trait SystemChangeLogTrait
 {
     public function onAfterDelete($object)

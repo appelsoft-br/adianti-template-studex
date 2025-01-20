@@ -9,7 +9,7 @@ use Exception;
 /**
  * Singleton manager for database connections
  *
- * @version    7.6
+ * @version    8.0
  * @package    database
  * @author     Pablo Dall'Oglio
  * @copyright  Copyright (c) 2006 Adianti Solutions Ltd. (http://www.adianti.com.br)
@@ -41,7 +41,7 @@ class TConnection
 
         if (!$dbinfo) {
             // if the database doesn't exists, throws an exception
-            throw new Exception(AdiantiCoreTranslator::translate('File not found') . ': ' . "'{$database}.ini'");
+            throw new Exception(AdiantiCoreTranslator::translate('Database not found') . ': ' ."'{$database}.php'");
         }
 
         return self::openArray($dbinfo);
@@ -86,8 +86,9 @@ class TConnection
             case 'pgsql':
                 $port = $port ? $port : '5432';
                 $conn = new PDO("pgsql:dbname={$name};user={$user}; password={$pass};host=$host;port={$port}{$opts}");
-                if (!empty($char)) {
-                    $conn->exec("SET CLIENT_ENCODING TO '{$char}';");
+                if(!empty($char))
+                {
+                    $conn-> exec ("SET CLIENT_ENCODING TO '{$char}';");
                 }
                 break;
             case 'mysql':
@@ -120,8 +121,9 @@ class TConnection
                 break;
             case 'sqlite':
                 $conn = new PDO("sqlite:{$name}{$opts}");
-                if (is_null($fkey) or $fkey == '1') {
-                    $conn->query('PRAGMA foreign_keys = ON'); // referential integrity must be enabled
+                if (is_null($fkey) OR $fkey == '1')
+                {
+                    $conn-> query ('PRAGMA foreign_keys = ON'); // referential integrity must be enabled
                 }
                 break;
             case 'ibase':
@@ -129,7 +131,7 @@ class TConnection
                 $db_string = empty($port) ? "{$host}:{$name}" : "{$host}/{$port}:{$name}";
                 $charset = $char ? ";charset={$char}" : '';
                 $conn = new PDO("firebird:dbname={$db_string}{$charset}{$opts}", $user, $pass);
-                $conn->setAttribute(PDO::ATTR_AUTOCOMMIT, 0);
+                $conn-> setAttribute ( PDO::ATTR_AUTOCOMMIT, 0);
                 break;
             case 'oracle':
                 $port    = $port ? $port : '1521';
@@ -144,15 +146,15 @@ class TConnection
 
                 if (isset($db['date'])) {
                     $date = $db['date'];
-                    $conn->query("ALTER SESSION SET NLS_DATE_FORMAT = '{$date}'");
+                    $conn-> query ("ALTER SESSION SET NLS_DATE_FORMAT = '{$date}'");
                 }
                 if (isset($db['time'])) {
                     $time = $db['time'];
-                    $conn->query("ALTER SESSION SET NLS_TIMESTAMP_FORMAT = '{$time}'");
+                    $conn-> query ("ALTER SESSION SET NLS_TIMESTAMP_FORMAT = '{$time}'");
                 }
                 if (isset($db['nsep'])) {
                     $nsep = $db['nsep'];
-                    $conn->query("ALTER SESSION SET NLS_NUMERIC_CHARACTERS = '{$nsep}'");
+                    $conn-> query ("ALTER SESSION SET NLS_NUMERIC_CHARACTERS = '{$nsep}'");
                 }
                 break;
             case 'mssql':
@@ -187,8 +189,9 @@ class TConnection
                 } else {
                     $conn = new PDO("sqlsrv:Server={$host};Database={$name}{$opts}", $user, $pass);
                 }
-                if (!empty($db['ntyp'])) {
-                    $conn->setAttribute(PDO::SQLSRV_ATTR_FETCHES_NUMERIC_TYPE, true);
+                if (!empty($db['ntyp']))
+                {
+                    $conn-> setAttribute (PDO::SQLSRV_ATTR_FETCHES_NUMERIC_TYPE, true);
                 }
                 break;
             case 'odbc':
@@ -200,18 +203,21 @@ class TConnection
         }
 
         // define wich way will be used to report errors (EXCEPTION)
-        $conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-
-        if ($flow == '1') {
-            $conn->setAttribute(PDO::ATTR_CASE, PDO::CASE_LOWER);
+        $conn-> setAttribute (PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+        
+        if ($flow == '1')
+        {
+            $conn-> setAttribute (PDO::ATTR_CASE, PDO::CASE_LOWER);
         }
 
-        if ($fupp == '1') {
-            $conn->setAttribute(PDO::ATTR_CASE, PDO::CASE_UPPER);
+        if ($fupp == '1')
+        {
+            $conn-> setAttribute (PDO::ATTR_CASE, PDO::CASE_UPPER);
         }
 
-        if ($fnat == '1') {
-            $conn->setAttribute(PDO::ATTR_CASE, PDO::CASE_NATURAL);
+        if ($fnat == '1')
+        {
+            $conn-> setAttribute (PDO::ATTR_CASE, PDO::CASE_NATURAL);
         }
 
         // return the PDO object

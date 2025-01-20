@@ -19,7 +19,7 @@ use Exception;
 /**
  * DataGrid Widget: Allows to create datagrids with rows, columns and actions
  *
- * @version    7.6
+ * @version    8.0
  * @package    widget
  * @subpackage datagrid
  * @author     Pablo Dall'Oglio
@@ -45,11 +45,6 @@ class TDataGrid extends TTable
     protected $groupTotal;
     protected $groupContent;
     protected $groupMask;
-    protected $popover;
-    protected $poptitle;
-    protected $popside;
-    protected $popcontent;
-    protected $popcondition;
     protected $objects;
     protected $objectsGroup;
     protected $actionWidth;
@@ -67,7 +62,11 @@ class TDataGrid extends TTable
     protected $actionSide;
     protected $mutationAction;
     protected $forPrinting;
-
+    protected $searchForm;
+    protected $popovers;
+    protected $pageSize;
+    protected $pageOrientation;
+    
     /**
      * Class Constructor
      */
@@ -76,7 +75,6 @@ class TDataGrid extends TTable
         parent::__construct();
         $this->modelCreated = FALSE;
         $this->defaultClick = TRUE;
-        $this->popover = FALSE;
         $this->groupColumn = NULL;
         $this->groupContent = NULL;
         $this->groupMask = NULL;
@@ -97,7 +95,7 @@ class TDataGrid extends TTable
         $this->hasTotalFunction = false;
         $this->actionSide = 'left';
         $this->forPrinting = false;
-
+        $this->popovers = [];
         $this->rowcount = 0;
         $this->{'class'} = 'tdatagrid_table';
         $this->{'id'}    = 'tdatagrid_' . mt_rand(1000000000, 1999999999);
@@ -158,11 +156,12 @@ class TDataGrid extends TTable
      */
     public function enablePopover($title, $content, $popside = null, $popcondition = null)
     {
-        $this->popover = TRUE;
-        $this->poptitle = $title;
-        $this->popcontent = $content;
-        $this->popside = $popside;
-        $this->popcondition = $popcondition;
+        $this->popovers[] = [
+            'title' => $title,
+            'content' => $content,
+            'side' => $popside,
+            'condition' => $popcondition
+        ];
     }
 
     /**
@@ -238,7 +237,7 @@ class TDataGrid extends TTable
      * Add a Column to the DataGrid
      * @param $object A TDataGridColumn object
      */
-    public function addColumn(TDataGridColumn $object, TAction $action = null)
+    public function addColumn(TDataGridColumn $object, ?TAction $action = null)
     {
         if ($this->modelCreated) {
             throw new Exception(AdiantiCoreTranslator::translate('You must call ^1 before ^2', __METHOD__, 'createModel'));
@@ -310,16 +309,57 @@ class TDataGrid extends TTable
         parent::clearChildren();
         $this->actions = [];
         $this->prependRows = 0;
-
-        if ($this->columns) {
-            foreach ($this->columns as $column) {
+        
+        if ($this->columns)
+        {
+            foreach ($this->columns as $key => $column)
+            {
                 $column->removeAction();
+                
+                if (!$column->isPrintable())
+                {
+                    unset($this->columns[$key]);
+                }
             }
         }
 
         $this->createModel();
     }
 
+    /**
+     * Set page Size
+     * @param $page_size (a3,a4,a5,letter,legal)
+     */
+    public function setPageSize($page_size)
+    {
+        $this->pageSize = $page_size;
+    }
+    
+    /**
+     * Return the page size
+     */
+    public function getPageSize()
+    {
+        return $this->pageSize;
+    }
+    
+    /**
+     * Set page orientation
+     * @param $page_orientation (portrait, landscape)
+     */
+    public function setPageOrientation($page_orientation)
+    {
+        $this->pageOrientation = $page_orientation;
+    }
+    
+    /**
+     * Return the page orientation
+     */
+    public function getPageOrientation()
+    {
+        return $this->pageOrientation;
+    }
+    
     /**
      * Add an Action Group to the DataGrid
      * @param $object A TDataGridActionGroup object
@@ -603,6 +643,7 @@ class TDataGrid extends TTable
 
                 // get the action properties
                 $label     = $action->getLabel();
+                $title     = $action->getTitle();
                 $image     = $action->getImage();
                 $condition = $action->getDisplayCondition();
 
@@ -614,12 +655,23 @@ class TDataGrid extends TTable
                     $link = new TElement('a');
                     $link->{'href'}      = htmlspecialchars($url);
                     $link->{'generator'} = 'adianti';
-                    $link->{'title'} = $label;
-
-                    if ($url == '#disabled') {
+                    $link->{'title'} = $title ?? $label;
+                    
+                    if ($url == '#disabled')
+                    {
                         $link->{'disabled'} = '1';
                     }
-
+                    
+                    if ($action->isPopover())
+                    {
+                        unset($link->{'href'});
+                        unset($link->{'generator'});
+                        
+                        $link->{'popaction'} = $action->serialize(false);
+                        $link->{'poptrigger'} = 'click';
+                        $link->{'popover'} = 'true';
+                    }
+                    
                     // verify if the link will have an icon or a label
                     if ($image) {
                         $image_tag = is_object($image) ? clone $image : new TImage($image);
@@ -897,20 +949,10 @@ class TDataGrid extends TTable
             if ($this->actionSide == 'right') {
                 $this->createItemActions($row, $object);
             }
-
-            if ($this->popover && (empty($this->popcondition) or call_user_func($this->popcondition, $object))) {
-                $poptitle   = $this->poptitle;
-                $popcontent = $this->popcontent;
-                $poptitle   = AdiantiTemplateHandler::replace($poptitle, $object);
-                $popcontent = AdiantiTemplateHandler::replace($popcontent, $object, null, true);
-
-                $row->{'data-popover'} = 'true';
-                $row->{'poptitle'} = $poptitle;
-                $row->{'popcontent'} = htmlspecialchars(str_replace("\n", '', nl2br($popcontent)));
-
-                if ($this->popside) {
-                    $row->{'popside'} = $this->popside;
-                }
+            
+            if ($this->popovers)
+            {
+                $this->processPopovers($row, $object);
             }
 
             if (count($this->searchAttributes) > 0) {
@@ -936,6 +978,32 @@ class TDataGrid extends TTable
         }
     }
 
+    /**
+     * Run popover according to their conditions
+     */
+    private function processPopovers($row, $object)
+    {
+        foreach ($this->popovers as $popover)
+        {
+            if (empty($popover['condition']) || call_user_func($popover['condition'], $object))
+            {
+                $poptitle   = $popover['title'];
+                $popcontent = $popover['content'];
+                $poptitle   = AdiantiTemplateHandler::replace($poptitle, $object);
+                $popcontent = AdiantiTemplateHandler::replace($popcontent, $object, null, true);
+                
+                $row->{'data-popover'} = 'true';
+                $row->{'poptitle'} = $popover['side'];
+                $row->{'popcontent'} = htmlspecialchars(str_replace("\n", '', nl2br($popcontent)));
+                
+                if ($popover['side'])
+                {
+                    $row->{'popside'} = $popover['side'];
+                }
+            }
+        }
+    }
+    
     /**
      * Append table row via Javascript
      */
@@ -1220,6 +1288,24 @@ class TDataGrid extends TTable
         return $this->pageNavigation;
     }
 
+    /**
+     * Assign a TForm object
+     * @param $searchForm object
+     */
+    public function setSearchForm($searchForm)
+    {
+        $this->searchForm = $searchForm;
+    }
+    
+    /**
+     * Return the assigned Search form object
+     * @return TForm object
+     */
+    public function getSearchForm()
+    {
+        return $this->searchForm;
+    }
+    
     /**
      * Set serach attributes
      */

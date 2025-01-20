@@ -1,12 +1,6 @@
 <?php
 
 require_once 'init.php';
-
-use Adianti\Control\TPage;
-use Adianti\Core\AdiantiCoreApplication;
-use Adianti\Core\AdiantiTemplateParser;
-use Adianti\Registry\TSession;
-
 $server = $_SERVER['HTTP_HOST'];
 if ($_SERVER['HTTP_HOST'] != 'localhost') {
     if ($_SERVER['HTTP_HOST'] != 'localhost' and !isset($_SERVER["HTTPS"]) || $_SERVER["HTTPS"] != "on") {
@@ -15,54 +9,71 @@ if ($_SERVER['HTTP_HOST'] != 'localhost') {
     }
 }
 
+$ini = AdiantiApplicationConfig::get();
+$theme  = $ini['general']['theme'];
+$class  = isset($_REQUEST['class']) ? $_REQUEST['class'] : '';
+$public = in_array($class, !empty($ini['permission']['public_classes']) ? $ini['permission']['public_classes'] : []);
+
+use Adianti\Control\TPage;
+use Adianti\Core\AdiantiCoreApplication;
+use Adianti\Core\AdiantiTemplateParser;
+use Adianti\Registry\TSession;
+
 $sessionHandler = new GerenciadorSessoes();
 new TSession($sessionHandler);
 
+ApplicationAuthenticationService::checkMultiSession();
+ApplicationTranslator::setLanguage( TSession::getValue('user_language'), true );
 
-$theme  = $ini['general']['theme'];
-$content     = file_get_contents("app/templates/{$theme}/layout.html");
-//$menu_string = AdiantiMenuBuilder::parse('menu.xml', $theme);
-//$content     = str_replace('{MENU}', $menu_string, $content);
-//$content     = ApplicationTranslator::translateTemplate($content);
-$content     = str_replace('{LIBRARIES}', file_get_contents("app/templates/{$theme}/libraries.html"), $content);
-$content     = str_replace('{class}', isset($_REQUEST['class']) ? $_REQUEST['class'] : '', $content);
-$content     = str_replace('{template}', $theme, $content);
-//$content     = str_replace('{MENU}', $menu_string, $content);
-$content     = str_replace('{lang}', $ini['general']['language'], $content);
-$css         = TPage::getLoadedCSS();
-$js          = TPage::getLoadedJS();
-$content     = str_replace('{HEAD}', $css . $js, $content);
-
-if (TSession::getValue('logged')) {
-    $ambiente = new AmbienteConexao();
-
-    $cor = $ambiente->verificarProducao() ? 'blue' : 'red';
-
-    $content = str_replace('{$cor}', $cor, $content);
-
-    switch (SessaoService::buscarTipoUsuario()) {
-
-        case TipoUsuario::ADMIN_REGIONAL:
-        case TipoUsuario::FUNCIONARIO_REGIONAL:
-            $arquivo = 'menu_regional.xml';
-            $content = str_replace('{$paginaInicial}', "HomeRegional", $content);
-            break;
-
-        case TipoUsuario::VENDEDOR:
-            $arquivo = 'menu_vendedor.xml';
-            $content = str_replace('{$paginaInicial}', "HomeVendedor", $content);
-            break;
-
-        default:
-            $arquivo = 'menu.xml';
-            $content = str_replace('{$paginaInicial}', "WelcomeView", $content);
-            break;
+if ( TSession::getValue('logged') )
+{
+    if (isset($_REQUEST['template']) AND $_REQUEST['template'] == 'iframe')
+    {
+        $content = file_get_contents("app/templates/{$theme}/iframe.html");
     }
+    else
+    {
+        $ambiente = new AmbienteConexao();
+        $arquivoMenu = 'menu.xml';
+        
+        switch (SessaoService::buscarTipoUsuario()) {
+            case TipoUsuario::ADMIN_REGIONAL:
+            case TipoUsuario::FUNCIONARIO_REGIONAL:
+                $arquivoMenu = 'menu_regional.xml';
+                $content = str_replace('{HOMEPAGE}', "HomeRegional", $content);
+                break;
+    
+            case TipoUsuario::VENDEDOR:
+                $arquivoMenu = 'menu_vendedor.xml';
+                $content = str_replace('{HOMEPAGE}', "HomeVendedor", $content);
+                break;
+    
+            default:
+                $arquivoMenu = 'menu.xml';
+                $content = str_replace('{HOMEPAGE}', "WelcomeView", $content);
+                break;
+        }
 
-    $menu    = AdiantiMenuBuilder::parse($arquivo, $theme);
-    $content = str_replace('{MENU}', $menu, $content);
-} else {
-    $content = file_get_contents("app/templates/{$theme}/login.html");
+        $content = file_get_contents("app/templates/{$theme}/layout.html");
+        $content = str_replace('{MENU}', AdiantiMenuBuilder::parse($arquivoMenu, $theme), $content);
+        $content = str_replace('{MENUTOP}', AdiantiMenuBuilder::parseNavBar('menu-top.xml', $theme), $content);
+        $content = str_replace('{MENUBOTTOM}', AdiantiMenuBuilder::parseNavBar('menu-bottom.xml', $theme), $content);
+    }
+}
+else
+{
+    if (isset($ini['general']['public_view']) && $ini['general']['public_view'] == '1')
+    {
+        $content = file_get_contents("app/templates/{$theme}/public.html");
+        $menu    = AdiantiMenuBuilder::parse('menu-public.xml', $theme);
+        $content = str_replace('{MENU}', $menu, $content);
+        $content = str_replace('{MENUTOP}', AdiantiMenuBuilder::parseNavBar('menu-top-public.xml', $theme), $content);
+        $content = str_replace('{MENUBOTTOM}', AdiantiMenuBuilder::parseNavBar('menu-bottom-public.xml', $theme), $content);
+    }
+    else
+    {
+        $content = file_get_contents("app/templates/{$theme}/login.html");
+    }
 }
 
 $content = ApplicationTranslator::translateTemplate($content);

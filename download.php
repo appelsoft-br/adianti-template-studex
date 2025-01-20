@@ -3,7 +3,19 @@ if (isset($_GET['file'])) {
     $file      = $_GET['file'];
     $info      = pathinfo($file);
     $extension = $info['extension'];
-
+    
+    // must be inside the application
+    if (strpos(realpath($file), __DIR__) === false)
+    {
+        return;
+    }
+    
+    // reserved path
+    if (substr($file,0,12) === 'files/system')
+    {
+        return;
+    }
+    
     $content_type_list = array();
     $content_type_list['txt']  = 'text/plain';
     $content_type_list['html'] = 'text/html';

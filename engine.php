@@ -12,52 +12,68 @@ class TApplication extends AdiantiCoreApplication
 {
     public static function run($debug = null)
     {
-
         $sessionHandler = new GerenciadorSessoes();
         new TSession($sessionHandler);
-
-        if ($_REQUEST) {
-            $ini    = AdiantiApplicationConfig::get();
-            $debug  = is_null($debug) ? $ini['general']['debug'] : $debug;
+        ApplicationAuthenticationService::checkMultiSession();
+        ApplicationTranslator::setLanguage( TSession::getValue('user_language'), true ); // multi-lang
+        
+        if ($_REQUEST)
+        {
+            $ini = AdiantiApplicationConfig::get();
+            
             $class  = isset($_REQUEST['class']) ? $_REQUEST['class'] : '';
-            $public = in_array($class, $ini['permission']['public_classes']);
-
+            $method = isset($_REQUEST['method']) ? $_REQUEST['method'] : '';
+            $public = in_array($class, !empty($ini['permission']['public_classes']) ? $ini['permission']['public_classes'] : []);
+            $debug  = is_null($debug)? $ini['general']['debug'] : $debug;
+            
             if (TSession::getValue('logged')) // logged
             {
-                $programs = (array) TSession::getValue('programs'); // programs with permission
-                $programs = array_merge($programs, self::getDefaultPermissions());
-
-                if (isset($programs[$class]) or $public) {
+                if ( SystemPermission::checkPermission($class, $method) )
+                {
                     parent::run($debug);
-                } else {
-                    new TMessage('error', _t('Permission denied'));
                 }
-            } else if ($class == 'LoginForm' or $public) {
+                else if (self::hasDefaultPermissions($class))
+                {
+                    parent::run($debug);
+                }
+                else
+                {
+                    http_response_code(401);
+                    new TMessage('error', _t('Permission denied') );
+                }
+            }
+            else if ($class == 'LoginForm' || $public )
+            {
                 parent::run($debug);
-            } else {
-                new TMessage('error', _t('Permission denied'), new TAction(array(LoginForm::class, 'onLogout')));
+            }
+            else
+            {
+                http_response_code(401);
+                new TMessage('error', _t('Permission denied'), new TAction(array('LoginForm','onLogout')) );
             }
         }
     }
 
-    public static function getDefaultPermissions()
+    public static function getDefaultPermissions($class)
     {
-        return [
-            'Adianti\Base\TStandardSeek' => TRUE,
-            'LoginForm' => TRUE,
-            'AdiantiMultiSearchService' => TRUE,
-            'AdiantiUploaderService' => TRUE,
-            'AdiantiAutocompleteService' => TRUE,
-            'SystemDocumentUploaderService' => TRUE,
-            'EmptyPage' => TRUE,
-            'MessageList' => TRUE,
-            'NotificationList' => TRUE,
-            'SearchBox' => TRUE,
-            'PfxToBase64Service' => TRUE,
-            'UploaderService' => TRUE,
-            'SearchInputBox' => TRUE
-        ];
-    }
+        $default_permissions = ['Adianti\Base\TStandardSeek' => TRUE,
+                                'LoginForm' => TRUE,
+                                'SystemPermissionController' => TRUE,
+                                'AdiantiMultiSearchService' => TRUE,
+                                'AdiantiUploaderService' => TRUE,
+                                'AdiantiAutocompleteService' => TRUE,
+                                'SystemDocumentUploaderService' => TRUE,
+                                'SystemMessageDropdown' => TRUE,
+                                'SystemNotificationDropdown' => TRUE,
+                                'EmptyPage' => TRUE,
+                                'SearchBox' => TRUE,
+                                'PfxToBase64Service' => TRUE,
+                                'UploaderService' => TRUE,
+                                'SearchInputBox' => TRUE
+                                ];
+        
+        return (isset($default_permissions[$class]) && $default_permissions[$class]);
+    } 
 }
 
 TApplication::run();
